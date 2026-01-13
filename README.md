@@ -644,6 +644,82 @@ jobs:
 5. **Clean up after tests** - `docker compose down -v` removes volumes too
 6. **Use BuildKit** - faster builds with better caching (enabled by default)
 
+## Für Entwickler
+
+Alle Workflows in dieser Organisation unterstützen Self-Hosted GitHub Actions Runner. Dies ermöglicht:
+
+- **Kostenkontrolle**: Keine GitHub Actions Minutes Verbrauch
+- **Custom Hardware**: Nutzung spezialisierter Hardware (GPU, viel RAM, etc.)
+- **Netzwerkzugang**: Zugriff auf interne Netzwerke und Ressourcen
+- **Compliance**: Builds innerhalb der eigenen Infrastruktur
+- **Performance**: Schnellere Builds mit lokalen Ressourcen
+
+> **Wichtig**: Self-Hosted Runner außerhalb von GitHub's Infrastruktur haben keinen Zugriff auf den GitHub Actions Cache Service. Siehe [Cache-Konfiguration](#cache-konfiguration) für Details.
+
+### Runner-Konfiguration via Org-Variable
+
+Die Organisation stellt eine Variable `RUNNER_LINUX` bereit, um Self-Hosted Runner zentral zu aktivieren:
+
+| `vars.RUNNER_LINUX` | Verwendeter Runner |
+|---------------------|-------------------|
+| Nicht gesetzt | `ubuntu-latest` (GitHub-hosted) |
+| `["self-hosted", "linux"]` | Self-Hosted Runner |
+
+**Verwendung in Workflows:**
+
+```yaml
+jobs:
+  build:
+    runs-on: ${{ vars.RUNNER_LINUX && fromJSON(vars.RUNNER_LINUX) || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "Running on ${{ runner.name }}"
+```
+
+### Mit Reusable Workflows
+
+```yaml
+# Aufruf eines Reusable Workflows mit Self-Hosted Runner
+jobs:
+  build:
+    uses: bauer-group/automation-templates/.github/workflows/docker-build.yml@main
+    with:
+      runs-on: ${{ vars.RUNNER_LINUX && toJSON(fromJSON(vars.RUNNER_LINUX)) || '"ubuntu-latest"' }}
+      cache-enabled: ${{ !vars.RUNNER_LINUX }}  # Cache nur für GitHub-hosted
+```
+
+### Cache-Konfiguration
+
+Self-Hosted Runner haben **keinen Zugriff** auf den GitHub Actions Cache Service (`actions/cache`). Daher:
+
+| Runner-Typ | `actions/cache` | Docker Layer Cache | Registry Cache |
+|------------|-----------------|-------------------|----------------|
+| GitHub-hosted | ✅ Funktioniert | ❌ Nicht persistent | ✅ Funktioniert |
+| Self-hosted | ❌ Nicht verfügbar | ✅ Lokal persistent | ✅ Funktioniert |
+
+**Empfehlungen für Self-Hosted:**
+
+1. **Docker Layer Cache nutzen** - Bleibt lokal erhalten zwischen Jobs
+2. **Registry Cache** - `docker/build-push-action` mit `cache-to: type=registry`
+3. **`cache-enabled: false`** - Bei Reusable Workflows mit Cache-Option
+
+```yaml
+# Beispiel: Docker Build mit Registry Cache (Self-Hosted kompatibel)
+- uses: docker/build-push-action@v5
+  with:
+    context: .
+    cache-from: type=registry,ref=ghcr.io/${{ github.repository }}:cache
+    cache-to: type=registry,ref=ghcr.io/${{ github.repository }}:cache,mode=max
+```
+
+### Links für Entwickler
+
+| Ressource | Link |
+|-----------|------|
+| Docker-in-Docker Solution | <https://github.com/bauer-group/GitHubRunner> |
+| GitHub Actions Cache Docs | <https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows> |
+| Docker Build Cache | <https://docs.docker.com/build/cache/> |
+
 ### Troubleshooting Workflows
 
 **Job stuck in "Queued":**
