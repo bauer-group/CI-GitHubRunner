@@ -48,7 +48,7 @@ echo ""
 docker compose ps
 
 echo ""
-REPO_URL=$(grep "^REPO_URL=" .env 2>/dev/null | cut -d'=' -f2 || echo "https://github.com/YOUR-ORG")
+REPO_URL=$(grep "^REPO_URL=" .env 2>/dev/null | cut -d'=' -f2 || echo "https://github.com/bauer-group")
 echo -e "${GREEN}Verify in GitHub:${NC}"
 echo "  ${REPO_URL}/settings/actions/runners"
 echo ""

@@ -64,8 +64,8 @@ fi
 # Get Repository/Organization URL
 echo ""
 echo "Enter the target URL:"
-echo "  - For organization runner: https://github.com/your-org"
-echo "  - For repository runner: https://github.com/your-org/your-repo"
+echo "  - For organization runner: https://github.com/bauer-group"
+echo "  - For repository runner: https://github.com/bauer-group/your-repo"
 echo ""
 read -p "Enter URL: " repo_url
 

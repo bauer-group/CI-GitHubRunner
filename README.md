@@ -94,7 +94,7 @@ This solution provides ephemeral GitHub Actions runners that:
 
 GitHub Apps provide better security with automatic token rotation and fine-grained permissions.
 
-1. Go to `https://github.com/organizations/{your-org}/settings/apps`
+1. Go to `https://github.com/organizations/{bauer-group}/settings/apps`
 2. Click **"New GitHub App"**
 3. Configure the app:
    - **Name**: `Self-Hosted Runner - {Environment}`
@@ -115,7 +115,7 @@ GitHub Apps provide better security with automatic token rotation and fine-grain
 # GITHUB_ACCESS_TOKEN=...
 
 APP_ID=123456
-APP_LOGIN=your-org-name
+APP_LOGIN=bauer-group-name
 RUNNER_SCOPE=org
 ```
 
@@ -126,14 +126,17 @@ Place the private key file as `github-app.pem` in the project root, or mount it 
 ```bash
 # Clone or copy this repository to your server
 cd /opt
-git clone https://github.com/your-org/GitHubRunner.git
-cd GitHubRunner
+git clone https://github.com/bauer-group/CI-GitHubRunner.git
+cd CI-GitHubRunner
 
 # Verify Docker is running
 docker info
 
 # Verify Docker Compose v2
 docker compose version
+
+# Make scripts executable (Linux/macOS only)
+chmod +x scripts/*.sh tools/*.sh
 ```
 
 ### Step 3: Configure Environment
@@ -180,11 +183,11 @@ nano .env
 GITHUB_ACCESS_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # For organization runner:
-REPO_URL=https://github.com/your-organization
+REPO_URL=https://github.com/bauer-groupanization
 RUNNER_SCOPE=org
 
 # For repository runner:
-REPO_URL=https://github.com/your-org/your-repo
+REPO_URL=https://github.com/bauer-group/your-repo
 RUNNER_SCOPE=repo
 
 # Custom labels for targeting in workflows
@@ -212,7 +215,7 @@ Runner is listening for jobs...
 
 #### For Organization Runners
 
-1. Go to `https://github.com/YOUR-ORG/settings/actions/runners`
+1. Go to `https://github.com/bauer-group/settings/actions/runners`
 2. Your runner should appear as **"Idle"** with labels:
    - `self-hosted`
    - `linux`
@@ -222,7 +225,7 @@ Runner is listening for jobs...
 
 #### For Repository Runners
 
-1. Go to `https://github.com/YOUR-ORG/YOUR-REPO/settings/actions/runners`
+1. Go to `https://github.com/bauer-group/YOUR-REPO/settings/actions/runners`
 2. Verify runner status is **"Idle"**
 
 ### Step 6: Scale Runners (Optional)
@@ -241,7 +244,7 @@ Configure your runner to be available for **all repositories** in your organizat
 
 ### Runner Group Configuration
 
-1. Go to `https://github.com/YOUR-ORG/settings/actions/runner-groups`
+1. Go to `https://github.com/bauer-group/settings/actions/runner-groups`
 2. Find your runner group (e.g., **"Self-Hosted (BAUER GROUP)"**)
 3. Click on the group name to edit settings
 4. Configure **Repository access**:
@@ -261,7 +264,7 @@ RUNNER_GROUP=Self-Hosted (BAUER GROUP)
 
 # Organization-level runner
 RUNNER_SCOPE=org
-REPO_URL=https://github.com/your-org
+REPO_URL=https://github.com/bauer-group
 ```
 
 ### Using in Workflows
@@ -287,7 +290,7 @@ jobs:
 
 To enforce using only your self-hosted runners:
 
-1. Go to `https://github.com/YOUR-ORG/settings/actions`
+1. Go to `https://github.com/bauer-group/settings/actions`
 2. Under **"Runners"**, uncheck:
    - ☐ Allow GitHub-hosted runners
 
@@ -297,7 +300,7 @@ Now all workflows **must** use your self-hosted runners.
 
 Check that your runner appears in the group:
 
-1. Go to `https://github.com/YOUR-ORG/settings/actions/runner-groups`
+1. Go to `https://github.com/bauer-group/settings/actions/runner-groups`
 2. Click on your group (**"Self-Hosted (BAUER GROUP)"**)
 3. Your runner should be listed with status **"Idle"**
 

@@ -83,6 +83,6 @@ docker compose ps --format "table {{.Name}}\t{{.Status}}" | grep -E "(NAME|runne
 echo ""
 echo -e "${GREEN}Verify in GitHub:${NC}"
 # Try to get REPO_URL from .env
-REPO_URL=$(grep "^REPO_URL=" .env 2>/dev/null | cut -d'=' -f2 || echo "https://github.com/YOUR-ORG")
+REPO_URL=$(grep "^REPO_URL=" .env 2>/dev/null | cut -d'=' -f2 || echo "https://github.com/bauer-group")
 echo "  ${REPO_URL}/settings/actions/runners"
 echo ""
