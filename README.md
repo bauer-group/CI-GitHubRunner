@@ -273,7 +273,20 @@ Configure your runner to be available for **all repositories** in your organizat
 
 ### Runner Group Configuration
 
-1. Go to `https://github.com/bauer-group/settings/actions/runner-groups`
+> **Wichtig:** Die Runner Group muss **vor** dem Start der Runner in GitHub existieren!
+> Die Gruppe "Default" ist immer vorhanden. Eigene Gruppen müssen manuell erstellt werden.
+
+**Runner Group erstellen (falls nicht vorhanden):**
+
+1. Go to `https://github.com/organizations/bauer-group/settings/actions/runner-groups`
+2. Click **"New runner group"**
+3. Name: z.B. `Self-Hosted (BAUER GROUP)`
+4. Configure repository access as needed
+5. Click **"Create group"**
+
+**Bestehende Gruppe konfigurieren:**
+
+1. Go to `https://github.com/organizations/bauer-group/settings/actions/runner-groups`
 2. Find your runner group (e.g., **"Self-Hosted (BAUER GROUP)"**)
 3. Click on the group name to edit settings
 4. Configure **Repository access**:
