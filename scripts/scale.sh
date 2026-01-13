@@ -66,7 +66,7 @@ fi
 
 # Scale runners
 echo -e "${BLUE}Scaling runners...${NC}"
-docker compose up -d --scale runner="$SCALE"
+docker compose up -d --scale agent="$SCALE"
 
 echo ""
 echo -e "${GREEN}Done!${NC}"
@@ -78,7 +78,7 @@ docker compose ps
 
 echo ""
 echo -e "${BLUE}Runner containers:${NC}"
-docker compose ps --format "table {{.Name}}\t{{.Status}}" | grep -E "(NAME|runner)"
+docker compose ps --format "table {{.Name}}\t{{.Status}}" | grep -E "(NAME|agent)"
 
 echo ""
 echo -e "${GREEN}Verify in GitHub:${NC}"

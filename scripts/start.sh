@@ -38,7 +38,7 @@ fi
 
 # Start services
 echo -e "${BLUE}Starting DinD and $SCALE runner(s)...${NC}"
-docker compose up -d --scale runner="$SCALE"
+docker compose up -d --scale agent="$SCALE"
 
 echo ""
 echo -e "${GREEN}Started successfully!${NC}"

@@ -61,20 +61,7 @@ if [ -z "$github_token" ]; then
     exit 1
 fi
 
-# Get Repository/Organization URL
-echo ""
-echo "Enter the target URL:"
-echo "  - For organization runner: https://github.com/bauer-group"
-echo "  - For repository runner: https://github.com/bauer-group/your-repo"
-echo ""
-read -p "Enter URL: " repo_url
-
-if [ -z "$repo_url" ]; then
-    echo -e "${RED}Error: Repository/Organization URL is required!${NC}"
-    exit 1
-fi
-
-# Determine scope
+# Determine scope first
 echo ""
 echo "Runner scope:"
 echo "  1) org  - Organization-level runner (recommended)"
@@ -82,10 +69,33 @@ echo "  2) repo - Single repository runner"
 read -p "Select scope (1/2) [1]: " scope_choice
 scope_choice=${scope_choice:-1}
 
+org_name=""
+repo_url=""
+
 if [ "$scope_choice" = "2" ]; then
     runner_scope="repo"
+    # Get Repository URL for repo runners
+    echo ""
+    echo "Enter the full repository URL:"
+    echo "  Example: https://github.com/bauer-group/your-repo"
+    echo ""
+    read -p "Repository URL: " repo_url
+    if [ -z "$repo_url" ]; then
+        echo -e "${RED}Error: Repository URL is required!${NC}"
+        exit 1
+    fi
 else
     runner_scope="org"
+    # Get Organization Name for org runners
+    echo ""
+    echo "Enter your GitHub organization name (NOT the full URL):"
+    echo "  Example: bauer-group"
+    echo ""
+    read -p "Organization name: " org_name
+    if [ -z "$org_name" ]; then
+        echo -e "${RED}Error: Organization name is required!${NC}"
+        exit 1
+    fi
 fi
 
 # Get runner labels
@@ -112,19 +122,29 @@ echo -e "${BLUE}Updating .env file...${NC}"
 if [[ "$OSTYPE" == "darwin"* ]]; then
     # macOS
     sed -i '' "s|^GITHUB_ACCESS_TOKEN=.*|GITHUB_ACCESS_TOKEN=$github_token|" "$PROJECT_ROOT/.env"
-    sed -i '' "s|^REPO_URL=.*|REPO_URL=$repo_url|" "$PROJECT_ROOT/.env"
     sed -i '' "s|^RUNNER_SCOPE=.*|RUNNER_SCOPE=$runner_scope|" "$PROJECT_ROOT/.env"
     sed -i '' "s|^RUNNER_LABELS=.*|RUNNER_LABELS=$runner_labels|" "$PROJECT_ROOT/.env"
     sed -i '' "s|^RUNNER_NAME_PREFIX=.*|RUNNER_NAME_PREFIX=$runner_prefix|" "$PROJECT_ROOT/.env"
     sed -i '' "s|^STACK_NAME=.*|STACK_NAME=$stack_name|" "$PROJECT_ROOT/.env"
+    if [ -n "$org_name" ]; then
+        sed -i '' "s|^ORG_NAME=.*|ORG_NAME=$org_name|" "$PROJECT_ROOT/.env"
+    fi
+    if [ -n "$repo_url" ]; then
+        sed -i '' "s|^# REPO_URL=.*|REPO_URL=$repo_url|" "$PROJECT_ROOT/.env"
+    fi
 else
     # Linux
     sed -i "s|^GITHUB_ACCESS_TOKEN=.*|GITHUB_ACCESS_TOKEN=$github_token|" "$PROJECT_ROOT/.env"
-    sed -i "s|^REPO_URL=.*|REPO_URL=$repo_url|" "$PROJECT_ROOT/.env"
     sed -i "s|^RUNNER_SCOPE=.*|RUNNER_SCOPE=$runner_scope|" "$PROJECT_ROOT/.env"
     sed -i "s|^RUNNER_LABELS=.*|RUNNER_LABELS=$runner_labels|" "$PROJECT_ROOT/.env"
     sed -i "s|^RUNNER_NAME_PREFIX=.*|RUNNER_NAME_PREFIX=$runner_prefix|" "$PROJECT_ROOT/.env"
     sed -i "s|^STACK_NAME=.*|STACK_NAME=$stack_name|" "$PROJECT_ROOT/.env"
+    if [ -n "$org_name" ]; then
+        sed -i "s|^ORG_NAME=.*|ORG_NAME=$org_name|" "$PROJECT_ROOT/.env"
+    fi
+    if [ -n "$repo_url" ]; then
+        sed -i "s|^# REPO_URL=.*|REPO_URL=$repo_url|" "$PROJECT_ROOT/.env"
+    fi
 fi
 
 echo ""
@@ -142,11 +162,15 @@ echo "     # Single runner:"
 echo "     docker compose up -d"
 echo ""
 echo "     # Multiple runners (4 parallel):"
-echo "     docker compose up -d --scale runner=4"
+echo "     docker compose up -d --scale agent=4"
 echo ""
 echo "  3. Check runner status:"
-echo "     docker compose logs -f runner"
+echo "     docker compose logs -f agent"
 echo ""
 echo "  4. Verify in GitHub:"
-echo "     ${repo_url}/settings/actions/runners"
+if [ -n "$org_name" ]; then
+    echo "     https://github.com/${org_name}/settings/actions/runners"
+else
+    echo "     ${repo_url}/settings/actions/runners"
+fi
 echo ""

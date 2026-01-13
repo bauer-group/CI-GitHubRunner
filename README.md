@@ -183,12 +183,12 @@ nano .env
 GITHUB_ACCESS_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # For organization runner:
-REPO_URL=https://github.com/bauer-groupanization
 RUNNER_SCOPE=org
+ORG_NAME=bauer-group
 
 # For repository runner:
-REPO_URL=https://github.com/bauer-group/your-repo
 RUNNER_SCOPE=repo
+REPO_URL=https://github.com/bauer-group/your-repo
 
 # Custom labels for targeting in workflows
 RUNNER_LABELS=docker,48-core
@@ -201,7 +201,7 @@ RUNNER_LABELS=docker,48-core
 docker compose up -d
 
 # View logs to verify registration
-docker compose logs -f runner
+docker compose logs -f agent
 ```
 
 **Expected output:**
@@ -232,7 +232,7 @@ Runner is listening for jobs...
 
 ```bash
 # Run 4 parallel runners (sharing one DinD instance)
-docker compose up -d --scale runner=4
+docker compose up -d --scale agent=4
 
 # Check all runners
 docker compose ps
@@ -264,7 +264,7 @@ RUNNER_GROUP=Self-Hosted (BAUER GROUP)
 
 # Organization-level runner
 RUNNER_SCOPE=org
-REPO_URL=https://github.com/bauer-group
+ORG_NAME=bauer-group
 ```
 
 ### Using in Workflows
@@ -311,8 +311,9 @@ Check that your runner appears in the group:
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `GITHUB_ACCESS_TOKEN` | PAT with admin scopes | **Required** |
-| `REPO_URL` | Target org/repo URL | **Required** |
 | `RUNNER_SCOPE` | `org` or `repo` | `org` |
+| `ORG_NAME` | Organization name (for `org` scope) | - |
+| `REPO_URL` | Repository URL (for `repo` scope) | - |
 | `RUNNER_LABELS` | Additional labels (default: self-hosted, linux, x64) | `docker,48-core` |
 
 ### Resource Limits
@@ -515,29 +516,172 @@ Use the scale script to manage runner instances:
 **Or use Docker Compose directly:**
 
 ```bash
-docker compose up -d --scale runner=4
+docker compose up -d --scale agent=4
 ```
 
 All runners share a single DinD instance (shared Docker cache for faster builds).
 
-## Maintenance
+## Scripts
 
-### Available Scripts
+Management-Scripts für den Betrieb der Runner-Umgebung.
 
-| Script | Description |
-|--------|-------------|
-| `./scripts/setup-env.sh` | Interactive environment configuration |
-| `./scripts/start.sh [N]` | Start runners (N = number, default 1) |
-| `./scripts/stop.sh` | Stop all runners |
-| `./scripts/status.sh` | Show status and resource usage |
-| `./scripts/scale.sh N` | Scale to N runners |
-| `./scripts/cleanup.sh` | Cleanup Docker resources |
+### Übersicht
 
-**Windows users:** Run scripts via tools container:
+| Script | Beschreibung |
+|--------|--------------|
+| `setup-env.sh` | Interaktive Umgebungskonfiguration |
+| `start.sh` | Runner starten |
+| `stop.sh` | Alle Runner stoppen |
+| `status.sh` | Status und Ressourcen anzeigen |
+| `scale.sh` | Runner skalieren |
+| `cleanup.sh` | Docker-Ressourcen bereinigen |
+
+### setup-env.sh
+
+Interaktiver Assistent für die Erstkonfiguration der `.env`-Datei.
+
+```bash
+./scripts/setup-env.sh
+```
+
+**Abfragt:**
+
+- GitHub Access Token (PAT oder App)
+- Organisation/Repository URL
+- Runner-Scope (org/repo)
+- Runner-Labels
+- Runner-Gruppe
+
+**Ausgabe:** Erstellt/aktualisiert die `.env`-Datei mit den eingegebenen Werten.
+
+### start.sh
+
+Startet die Runner-Umgebung (DinD + Runner).
+
+```bash
+# Einen Runner starten (Standard)
+./scripts/start.sh
+
+# Mehrere Runner starten
+./scripts/start.sh 4
+```
+
+**Parameter:**
+
+- `[N]` - Anzahl der Runner (optional, Standard: 1)
+
+**Was passiert:**
+
+1. Prüft ob `.env` existiert
+2. Startet Docker-in-Docker Container
+3. Startet N Runner-Container
+4. Zeigt Container-Status an
+5. Gibt Link zur GitHub-Verifizierung aus
+
+### stop.sh
+
+Stoppt alle Runner und den DinD-Container.
+
+```bash
+./scripts/stop.sh
+```
+
+**Was passiert:**
+
+1. Stoppt alle laufenden Runner
+2. Stoppt Docker-in-Docker Container
+3. Netzwerke und Volumes bleiben erhalten
+
+### status.sh
+
+Zeigt den aktuellen Status und Ressourcenverbrauch an.
+
+```bash
+./scripts/status.sh
+```
+
+**Ausgabe:**
+
+- Container-Status (running/stopped)
+- Ressourcenverbrauch (CPU, RAM)
+- Disk-Nutzung
+- Netzwerk-Informationen
+- Link zu GitHub Runner-Settings
+
+### scale.sh
+
+Skaliert die Anzahl der laufenden Runner.
+
+```bash
+# Auf 4 Runner skalieren
+./scripts/scale.sh 4
+
+# Auf 1 Runner reduzieren
+./scripts/scale.sh 1
+
+# Auf 8 Runner hochskalieren
+./scripts/scale.sh 8
+```
+
+**Parameter:**
+
+- `N` - Zielanzahl der Runner (erforderlich)
+
+**Hinweis:** Nur die Runner werden skaliert, DinD bleibt ein einzelner Container (shared Docker cache).
+
+### cleanup.sh
+
+Bereinigt Docker-Ressourcen.
+
+```bash
+# Standard-Cleanup (Work-Verzeichnisse)
+./scripts/cleanup.sh
+
+# Vollständiger Cleanup (inkl. Volumes, Images)
+./scripts/cleanup.sh --full
+```
+
+**Optionen:**
+
+- `--full` - Entfernt auch Volumes und unbenutzte Images
+
+**Standard-Cleanup entfernt:**
+
+- Gestoppte Container
+- Unbenutzte Netzwerke
+- Dangling Images
+- Build-Cache
+
+**Full-Cleanup entfernt zusätzlich:**
+
+- Alle Volumes
+- Alle ungenutzten Images
+
+### Windows-Nutzung
+
+Auf Windows können die Scripts über den Tools-Container ausgeführt werden:
+
+**PowerShell:**
 
 ```powershell
+# Interaktiver Modus
+.\tools\run.ps1
+
+# Script direkt ausführen
 .\tools\run.ps1 -Script "./scripts/start.sh 4"
+.\tools\run.ps1 -Script "./scripts/status.sh"
+.\tools\run.ps1 -Script "./scripts/scale.sh 8"
 ```
+
+**CMD:**
+
+```cmd
+tools\run.cmd
+```
+
+Der Tools-Container stellt eine Linux-Umgebung bereit, in der alle Scripts ausgeführt werden können.
+
+## Maintenance
 
 ### View Logs
 
@@ -546,7 +690,7 @@ All runners share a single DinD instance (shared Docker cache for faster builds)
 docker compose logs -f
 
 # Runner only
-docker compose logs -f runner
+docker compose logs -f agent
 
 # DinD only
 docker compose logs -f docker-in-docker
@@ -614,7 +758,7 @@ The host Docker socket is **never** mounted into containers.
 
 1. Verify token has correct scopes
 2. Check REPO_URL format
-3. View logs: `docker compose logs runner`
+3. View logs: `docker compose logs agent`
 
 ### Docker Commands Failing in Workflows
 
@@ -639,7 +783,7 @@ With `EPHEMERAL=true`, runners restart after each job. This is expected behavior
 To check if it's working correctly:
 
 ```bash
-docker compose logs -f runner | grep -E "(Listening|Running|Removing)"
+docker compose logs -f agent | grep -E "(Listening|Running|Removing)"
 ```
 
 ## File Structure

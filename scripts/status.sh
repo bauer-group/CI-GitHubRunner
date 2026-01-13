@@ -40,7 +40,7 @@ docker compose ps
 echo ""
 
 # Count runners
-RUNNER_COUNT=$(docker compose ps --format "{{.Name}}" 2>/dev/null | grep -c "runner" || echo "0")
+RUNNER_COUNT=$(docker compose ps --format "{{.Name}}" 2>/dev/null | grep -c "agent" || echo "0")
 DIND_STATUS=$(docker compose ps --format "{{.Status}}" docker-in-docker 2>/dev/null | head -1 || echo "not running")
 
 echo -e "${BLUE}Summary:${NC}"

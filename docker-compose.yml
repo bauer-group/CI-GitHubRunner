@@ -8,7 +8,7 @@
 #   docker compose up -d
 #
 # Scale runners (shared DinD):
-#   docker compose up -d --scale runner=4
+#   docker compose up -d --scale agent=4
 # =============================================================================
 
 name: ${STACK_NAME:-github-runner}
@@ -60,7 +60,7 @@ services:
   # ---------------------------------------------------------------------------
   # GitHub Actions Runner
   # ---------------------------------------------------------------------------
-  runner:
+  agent:
     image: myoung34/github-runner:latest
     restart: unless-stopped
     environment:
@@ -70,7 +70,10 @@ services:
       APP_LOGIN: ${APP_LOGIN:-}
       APP_PRIVATE_KEY: ${APP_PRIVATE_KEY:-}
       # Runner configuration
-      REPO_URL: ${REPO_URL}
+      # For org runners: Set ORG_NAME (e.g., "bauer-group")
+      # For repo runners: Set REPO_URL (e.g., "https://github.com/org/repo")
+      ORG_NAME: ${ORG_NAME:-}
+      REPO_URL: ${REPO_URL:-}
       RUNNER_SCOPE: ${RUNNER_SCOPE:-org}
       RUNNER_NAME_PREFIX: ${RUNNER_NAME_PREFIX:-self-hosted}
       RUNNER_WORKDIR: ${RUNNER_WORKDIR:-/tmp/runner/work}
