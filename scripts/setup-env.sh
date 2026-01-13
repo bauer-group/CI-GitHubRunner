@@ -101,8 +101,8 @@ fi
 # Get runner labels
 echo ""
 echo "Runner labels (comma-separated, added to default labels: self-hosted, linux, x64)"
-read -p "Additional labels [docker,48-core]: " runner_labels
-runner_labels=${runner_labels:-docker,48-core}
+read -p "Additional labels [docker]: " runner_labels
+runner_labels=${runner_labels:-docker}
 
 # Get runner name prefix
 echo ""

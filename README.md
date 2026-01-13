@@ -99,7 +99,22 @@ This solution provides ephemeral GitHub Actions runners that:
 
 GitHub Apps provide better security with automatic token rotation and fine-grained permissions.
 
-1. Go to `https://github.com/organizations/{bauer-group}/settings/apps`
+**Schnellstart mit Helper-Script:**
+
+```bash
+# Interaktives Script für GitHub App Erstellung
+./scripts/create-github-app.sh
+```
+
+Das Script:
+
+1. Erstellt das App-Manifest mit korrekten Berechtigungen
+2. Generiert die URL für die Manifest-basierte App-Erstellung
+3. Konfiguriert automatisch die `.env` Datei (optional)
+
+**Oder manuell:**
+
+1. Go to `https://github.com/organizations/{org}/settings/apps`
 2. Click **"New GitHub App"**
 3. Configure the app:
    - **Name**: `Self-Hosted Runner - {Environment}`
@@ -120,11 +135,13 @@ GitHub Apps provide better security with automatic token rotation and fine-grain
 # GITHUB_ACCESS_TOKEN=...
 
 APP_ID=123456
-APP_LOGIN=bauer-group-name
+APP_LOGIN=your-org-name
+APP_PRIVATE_KEY=/path/to/private-key.pem
 RUNNER_SCOPE=org
+ORG_NAME=your-org-name
 ```
 
-Place the private key file as `github-app.pem` in the project root, or mount it via volume.
+Place the private key file (e.g., `github-app.pem`) in the project root, or provide an absolute path.
 
 ### Step 2: Prepare the Server
 
@@ -321,11 +338,20 @@ on: [push, pull_request]
 
 jobs:
   build:
-    # Use self-hosted runner from your group
-    runs-on: [self-hosted, docker]
+    # Option 1: Labels only (matches any runner with these labels)
+    runs-on: [self-hosted, linux, docker]
     steps:
       - uses: actions/checkout@v4
       - run: echo "Running on self-hosted runner!"
+
+  build-specific:
+    # Option 2: Runner Group + Labels (empfohlen für Orgs)
+    runs-on:
+      group: Self-Hosted (BAUER GROUP)
+      labels: [linux, docker]
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "Running on runner from specific group!"
 ```
 
 ### Optional: Disable GitHub-Hosted Runners
@@ -356,7 +382,8 @@ Check that your runner appears in the group:
 | `RUNNER_SCOPE` | `org` or `repo` | `org` |
 | `ORG_NAME` | Organization name (for `org` scope) | - |
 | `REPO_URL` | Repository URL (for `repo` scope) | - |
-| `RUNNER_LABELS` | Additional labels (default: self-hosted, linux, x64) | `docker,48-core` |
+| `RUNNER_GROUP` | Runner group name (must exist in GitHub) | `Default` |
+| `RUNNER_LABELS` | Additional labels (default: self-hosted, linux, x64) | `docker` |
 
 ### Resource Limits
 
@@ -376,10 +403,42 @@ Target your self-hosted runner using labels in `runs-on`:
 ```yaml
 jobs:
   build:
-    runs-on: [self-hosted, docker, 48-core]
+    runs-on: [self-hosted, linux, docker]
     steps:
       - uses: actions/checkout@v4
       - run: echo "Running on self-hosted runner!"
+```
+
+### Using Runner Groups
+
+Für bessere Kontrolle kann die Runner Group direkt im Workflow angegeben werden:
+
+```yaml
+jobs:
+  build:
+    runs-on:
+      group: Self-Hosted (BAUER GROUP)
+      labels: [self-hosted, linux, docker]
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "Running on runner from specific group!"
+```
+
+**Vorteile der Runner Group Angabe:**
+
+- Explizite Zuordnung zu einer bestimmten Runner-Gruppe
+- Verhindert versehentliche Ausführung auf falschen Runnern
+- Bessere Kontrolle in Orgs mit mehreren Runner-Gruppen
+- Labels können zusätzlich zur Gruppe gefiltert werden
+
+**Nur Group ohne Labels:**
+
+```yaml
+jobs:
+  build:
+    runs-on:
+      group: Self-Hosted (BAUER GROUP)
+    # Verwendet jeden verfügbaren Runner aus der Gruppe
 ```
 
 ### Available Labels
@@ -413,7 +472,7 @@ on:
 
 jobs:
   build:
-    runs-on: [self-hosted, docker]
+    runs-on: [self-hosted, linux, docker]
     steps:
       - uses: actions/checkout@v4
 
@@ -436,7 +495,7 @@ on: [push, pull_request]
 
 jobs:
   test:
-    runs-on: [self-hosted, docker]
+    runs-on: [self-hosted, linux, docker]
     steps:
       - uses: actions/checkout@v4
 
@@ -465,7 +524,7 @@ on:
 
 jobs:
   build:
-    runs-on: [self-hosted, docker, 48-core]
+    runs-on: [self-hosted, linux, docker]
     steps:
       - uses: actions/checkout@v4
 
@@ -493,7 +552,7 @@ on:
 
 jobs:
   build:
-    runs-on: [self-hosted, docker]
+    runs-on: [self-hosted, linux, docker]
     strategy:
       matrix:
         node: [18, 20, 22]
@@ -504,13 +563,86 @@ jobs:
         run: docker build --build-arg NODE_VERSION=${{ matrix.node }} -t myapp:node${{ matrix.node }} .
 ```
 
+#### Fallback zu GitHub-Hosted Runners
+
+Wenn Self-Hosted Runner nicht verfügbar sind, kann auf GitHub-Hosted Runner zurückgefallen werden:
+
+```yaml
+name: Build with Fallback
+
+on: [push, pull_request]
+
+jobs:
+  # Prüft ob Self-Hosted Runner verfügbar sind
+  check-runners:
+    runs-on: ubuntu-latest
+    outputs:
+      use-self-hosted: ${{ steps.check.outputs.available }}
+    steps:
+      - name: Check self-hosted runner availability
+        id: check
+        run: |
+          # Versuche Self-Hosted Runner zu erreichen (Timeout 10s)
+          # Diese Prüfung ist optional - alternativ einfach "true" setzen
+          echo "available=true" >> $GITHUB_OUTPUT
+
+  build:
+    needs: check-runners
+    # Dynamische Runner-Auswahl basierend auf Verfügbarkeit
+    runs-on: ${{ needs.check-runners.outputs.use-self-hosted == 'true' && fromJSON('["self-hosted", "linux", "docker"]') || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show runner info
+        run: |
+          echo "Running on: ${{ runner.name }}"
+          echo "OS: ${{ runner.os }}"
+
+      - name: Build
+        run: |
+          if command -v docker &> /dev/null; then
+            docker build -t myapp:latest .
+          else
+            echo "Docker not available, using alternative build"
+            # Fallback build ohne Docker
+          fi
+```
+
+**Einfachere Alternative mit Workflow Dispatch:**
+
+```yaml
+name: Build (Selectable Runner)
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: 'Runner type'
+        required: true
+        default: 'self-hosted'
+        type: choice
+        options:
+          - self-hosted
+          - ubuntu-latest
+
+jobs:
+  build:
+    runs-on: ${{ inputs.runner == 'self-hosted' && fromJSON('["self-hosted", "linux", "docker"]') || inputs.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "Building on ${{ runner.name }}"
+```
+
+**Hinweis:** GitHub Actions hat keinen eingebauten automatischen Fallback-Mechanismus. Die obigen Beispiele zeigen Workarounds für verschiedene Szenarien.
+
 ### Best Practices
 
 1. **Always use `if: always()` for cleanup steps** - ensures containers are removed even on failure
-2. **Use specific labels** - `[self-hosted, docker]` instead of just `[self-hosted]`
-3. **Don't store secrets in images** - use GitHub Secrets and environment variables
-4. **Clean up after tests** - `docker compose down -v` removes volumes too
-5. **Use BuildKit** - faster builds with better caching (enabled by default)
+2. **Use specific labels** - `[self-hosted, linux, docker]` instead of just `[self-hosted]`
+3. **Use runner groups for orgs** - `runs-on: { group: "My Group", labels: [...] }`
+4. **Don't store secrets in images** - use GitHub Secrets and environment variables
+5. **Clean up after tests** - `docker compose down -v` removes volumes too
+6. **Use BuildKit** - faster builds with better caching (enabled by default)
 
 ### Troubleshooting Workflows
 
@@ -573,6 +705,7 @@ Management-Scripts für den Betrieb der Runner-Umgebung.
 |--------|--------------|
 | `deploy.sh` | Deployment und Updates auf dem Host |
 | `setup-env.sh` | Interaktive Umgebungskonfiguration |
+| `create-github-app.sh` | GitHub App erstellen und .env konfigurieren |
 | `start.sh` | Runner starten |
 | `stop.sh` | Alle Runner stoppen |
 | `status.sh` | Status und Ressourcen anzeigen |
@@ -619,6 +752,37 @@ Interaktiver Assistent für die Erstkonfiguration der `.env`-Datei.
 - Runner-Gruppe
 
 **Ausgabe:** Erstellt/aktualisiert die `.env`-Datei mit den eingegebenen Werten.
+
+### create-github-app.sh
+
+Erstellt eine GitHub App mit minimalen Berechtigungen für Self-Hosted Runner.
+
+```bash
+./scripts/create-github-app.sh
+```
+
+**Vorteile gegenüber PAT:**
+
+- Nur minimale Berechtigungen (nicht voller `admin:org` Zugriff)
+- Automatische Token-Rotation
+- Bessere Audit-Logs
+
+**Ablauf:**
+
+1. Fragt nach Organisation und App-Name
+2. Generiert App-Manifest mit korrekten Permissions
+3. Zeigt URL für Manifest-basierte App-Erstellung
+4. Optional: Konfiguriert automatisch die `.env` Datei
+
+**Interaktive .env Konfiguration:**
+
+Nach der App-Erstellung in GitHub kann das Script die `.env` automatisch konfigurieren:
+
+- Fragt nach App ID (Zahl von der GitHub App Seite)
+- Fragt nach Pfad zur Private Key Datei (.pem)
+- Setzt `APP_ID`, `APP_LOGIN`, `APP_PRIVATE_KEY`
+- Kommentiert `GITHUB_ACCESS_TOKEN` aus
+- Setzt `RUNNER_SCOPE=org` und `ORG_NAME`
 
 ### start.sh
 
