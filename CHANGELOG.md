@@ -1,3 +1,10 @@
+## [0.1.3](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.1.2...v0.1.3) (2026-01-13)
+
+
+### Bug Fixes
+
+* Add deployment script and update documentation for setup ([205fe0a](https://github.com/bauer-group/CI-GitHubRunner/commit/205fe0a24758a87abc781a9683b360367b9e417e))
+
 ## [0.1.2](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.1.1...v0.1.2) (2026-01-13)
 
 
