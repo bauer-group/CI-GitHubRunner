@@ -1,3 +1,10 @@
+## [0.1.1](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.1.0...v0.1.1) (2026-01-13)
+
+
+### Bug Fixes
+
+* Updated Repo URL's ([e4a0583](https://github.com/bauer-group/CI-GitHubRunner/commit/e4a05836bb7a306af69770ba34840e45f14d6ed7))
+
 # [0.1.0](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.0.0...v0.1.0) (2026-01-13)
 
 
