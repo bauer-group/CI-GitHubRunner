@@ -53,6 +53,7 @@ echo  GitHub Runner - Development Tools
 echo ===========================================
 echo.
 echo Available scripts:
+echo   ./scripts/deploy.sh      - Deploy/update on host
 echo   ./scripts/setup-env.sh   - Interactive environment setup
 echo   ./scripts/start.sh [N]   - Start N runners (default: 1)
 echo   ./scripts/stop.sh        - Stop all runners

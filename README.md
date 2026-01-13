@@ -57,27 +57,32 @@ This solution provides ephemeral GitHub Actions runners that:
 
 #### Option A: Personal Access Token (Classic) - Recommended for Quick Setup
 
-1. Go to [GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)](https://github.com/settings/tokens)
+**Schnellstart mit vorausgewählten Scopes:**
+
+- **Organization Runner:** [Token erstellen (repo + admin:org)](https://github.com/settings/tokens/new?scopes=repo,admin:org&description=Self-Hosted-Runner)
+- **Repository Runner:** [Token erstellen (repo)](https://github.com/settings/tokens/new?scopes=repo&description=Self-Hosted-Runner)
+
+**Oder manuell:**
+
+1. Go to [GitHub Settings → Tokens (classic)](https://github.com/settings/tokens)
 2. Click **"Generate new token (classic)"**
-3. Set a descriptive name: `Self-Hosted Runner - {Server Name}`
-4. Set expiration (recommend: 90 days or custom)
-5. Select scopes:
+3. Set expiration (recommend: 90 days)
+4. Select scopes:
 
-   **For Organization Runner:**
+   | Runner Type  | Required Scopes     |
+   |--------------|---------------------|
+   | Organization | `repo`, `admin:org` |
+   | Repository   | `repo`              |
 
-   ```text
-   ☑ repo (Full control of private repositories)
-   ☑ admin:org → manage_runners:org (Manage org runners and runner groups)
-   ```
+5. Click **"Generate token"** and copy immediately
 
-   **For Repository Runner:**
-
-   ```text
-   ☑ repo (Full control of private repositories)
-   ```
-
-6. Click **"Generate token"**
-7. **Copy the token immediately** - it won't be shown again!
+> **Hinweis zu `admin:org`:** Dieser Scope gewährt vollen Administrationszugriff auf die gesamte Organisation (nicht nur Runner). Dazu gehören:
+>
+> - Runner und Runner-Gruppen verwalten
+> - Webhooks, Teams, Mitglieder verwalten
+> - Org-Einstellungen ändern
+>
+> Für erhöhte Sicherheit empfehlen wir **Option C: GitHub App** - diese hat nur die minimal notwendigen Berechtigungen.
 
 #### Option B: Fine-grained Personal Access Token (More Secure)
 
@@ -124,7 +129,7 @@ Place the private key file as `github-app.pem` in the project root, or mount it 
 ### Step 2: Prepare the Server
 
 ```bash
-# Clone or copy this repository to your server
+# Clone this repository to your server
 cd /opt
 git clone https://github.com/bauer-group/CI-GitHubRunner.git
 cd CI-GitHubRunner
@@ -134,8 +139,32 @@ docker info
 
 # Verify Docker Compose v2
 docker compose version
+```
 
-# Make scripts executable (Linux/macOS only)
+#### Initial Deployment
+
+Use the deployment script for first-time setup:
+
+```bash
+# Make deploy script executable and run initial setup
+chmod +x scripts/deploy.sh
+./scripts/deploy.sh --init
+```
+
+The deploy script will:
+
+1. Configure git (disable fileMode for cross-platform compatibility)
+2. Pull latest changes from remote
+3. Make all scripts executable (`chmod +x`)
+4. Run interactive environment setup
+
+#### Manual Setup (Alternative)
+
+```bash
+# Configure git for this repo (optional, for cross-platform compatibility)
+git config core.fileMode false
+
+# Make scripts executable
 chmod +x scripts/*.sh tools/*.sh
 ```
 
@@ -529,12 +558,36 @@ Management-Scripts für den Betrieb der Runner-Umgebung.
 
 | Script | Beschreibung |
 |--------|--------------|
+| `deploy.sh` | Deployment und Updates auf dem Host |
 | `setup-env.sh` | Interaktive Umgebungskonfiguration |
 | `start.sh` | Runner starten |
 | `stop.sh` | Alle Runner stoppen |
 | `status.sh` | Status und Ressourcen anzeigen |
 | `scale.sh` | Runner skalieren |
 | `cleanup.sh` | Docker-Ressourcen bereinigen |
+
+### deploy.sh
+
+Deployment-Script für Erstinstallation und Updates auf dem Runner-Host.
+
+```bash
+# Erstinstallation (konfiguriert git, macht Scripts ausführbar, startet Setup)
+./scripts/deploy.sh --init
+
+# Update (pullt Änderungen, aktualisiert Berechtigungen)
+./scripts/deploy.sh
+```
+
+**Optionen:**
+
+- `--init`, `-i` - Erstinstallation mit interaktivem Setup
+
+**Was passiert:**
+
+1. Konfiguriert git (`core.fileMode false` für Cross-Platform-Kompatibilität)
+2. Pullt neueste Änderungen vom Remote
+3. Macht alle Scripts ausführbar (`chmod +x`)
+4. Bei `--init`: Startet interaktives Setup falls keine `.env` existiert
 
 ### setup-env.sh
 

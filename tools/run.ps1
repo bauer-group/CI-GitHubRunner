@@ -66,6 +66,7 @@ Write-Host " GitHub Runner - Development Tools" -ForegroundColor Green
 Write-Host "===========================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "Available scripts:"
+Write-Host "  ./scripts/deploy.sh      - Deploy/update on host" -ForegroundColor Yellow
 Write-Host "  ./scripts/setup-env.sh   - Interactive environment setup" -ForegroundColor Yellow
 Write-Host "  ./scripts/start.sh [N]   - Start N runners (default: 1)" -ForegroundColor Yellow
 Write-Host "  ./scripts/stop.sh        - Stop all runners" -ForegroundColor Yellow
