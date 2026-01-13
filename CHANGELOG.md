@@ -1,3 +1,10 @@
+# [0.2.0](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.1.3...v0.2.0) (2026-01-13)
+
+
+### Features
+
+* Add create-github-app.sh script and update documentation for GitHub App setup ([080fc60](https://github.com/bauer-group/CI-GitHubRunner/commit/080fc609e0de2c689aab2d75f0b8217fdcdd4c37))
+
 ## [0.1.3](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.1.2...v0.1.3) (2026-01-13)
 
 
