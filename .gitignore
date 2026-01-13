@@ -1,0 +1,26 @@
+# =============================================================================
+# GitHub Runner - Git Ignore
+# =============================================================================
+
+# Environment files (contain secrets)
+.env
+.env.local
+.env.*.local
+*.env.backup.*
+
+# IDE
+.idea/
+.vscode/
+.claude/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/

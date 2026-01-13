@@ -1,0 +1,53 @@
+name: 🚀 Release
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '.github/**'
+      - '*.md'
+      - 'docs/**'
+  workflow_dispatch:
+    inputs:
+      force-release:
+        description: 'force create release'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  validate-compose:
+    uses: bauer-group/automation-templates/.github/workflows/modules-validate-compose.yml@main
+    with:
+      compose-files: '["docker-compose.yml"]'
+      env-template: |
+        {
+          "STACK_NAME": "github-runner-test",
+          "GITHUB_ACCESS_TOKEN": "ghp_test_token_placeholder",
+          "REPO_URL": "https://github.com/test-org",
+          "RUNNER_SCOPE": "org",
+          "DIND_IMAGE": "dind"
+        }
+
+  validate-scripts:
+    uses: bauer-group/automation-templates/.github/workflows/modules-validate-shellscript.yml@main
+    with:
+      scan-directory: '.'
+      severity: 'error'
+
+  release:
+    needs: [validate-compose, validate-scripts]
+    if: |
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      needs.validate-compose.outputs.valid == 'true' &&
+      needs.validate-scripts.outputs.passed == 'true'
+    uses: bauer-group/automation-templates/.github/workflows/modules-semantic-release.yml@main
+    with:
+      target-branch: 'main'
+      dry-run: false
+      force-release: ${{ inputs.force-release || false }}
+    secrets: inherit

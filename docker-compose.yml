@@ -1,0 +1,127 @@
+# =============================================================================
+# GitHub Runner - Self-Hosted with Docker-in-Docker
+# =============================================================================
+# High-performance ephemeral GitHub Actions runners
+# Uses myoung34/github-runner with isolated DinD container
+#
+# Usage:
+#   docker compose up -d
+#
+# Scale runners (shared DinD):
+#   docker compose up -d --scale runner=4
+# =============================================================================
+
+name: ${STACK_NAME:-github-runner}
+
+services:
+  # ---------------------------------------------------------------------------
+  # Docker-in-Docker Daemon
+  # ---------------------------------------------------------------------------
+  docker-in-docker:
+    image: docker:${DIND_IMAGE:-dind}
+    container_name: ${STACK_NAME:-github-runner}_container
+    hostname: docker-in-docker
+    privileged: true
+    restart: unless-stopped
+    environment:
+      DOCKER_TLS_CERTDIR: ""
+      DOCKER_DRIVER: ${DOCKER_STORAGE_DRIVER:-overlay2}
+    command:
+      - dockerd
+      - --host=tcp://0.0.0.0:2375
+      - --host=unix:///var/run/docker.sock
+      - --tls=false
+      - --storage-driver=${DOCKER_STORAGE_DRIVER:-overlay2}
+      - --mtu=${DOCKER_MTU:-1500}
+      - --max-concurrent-downloads=20
+      - --max-concurrent-uploads=10
+    volumes:
+      - dind-data:/var/lib/docker
+    networks:
+      - runner-network
+    healthcheck:
+      test: ["CMD", "docker", "info"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: "${DIND_CPU_LIMIT:-16}"
+          memory: ${DIND_MEMORY_LIMIT:-32g}
+    shm_size: ${DIND_SHM_SIZE:-8g}
+    logging:
+      driver: json-file
+      options:
+        max-size: ${LOG_MAX_SIZE:-50m}
+        max-file: "5"
+
+  # ---------------------------------------------------------------------------
+  # GitHub Actions Runner
+  # ---------------------------------------------------------------------------
+  runner:
+    image: myoung34/github-runner:latest
+    restart: unless-stopped
+    environment:
+      # Authentication: Use either ACCESS_TOKEN or APP_ID/APP_LOGIN/APP_PRIVATE_KEY
+      ACCESS_TOKEN: ${GITHUB_ACCESS_TOKEN:-}
+      APP_ID: ${APP_ID:-}
+      APP_LOGIN: ${APP_LOGIN:-}
+      APP_PRIVATE_KEY: ${APP_PRIVATE_KEY:-}
+      # Runner configuration
+      REPO_URL: ${REPO_URL}
+      RUNNER_SCOPE: ${RUNNER_SCOPE:-org}
+      RUNNER_NAME_PREFIX: ${RUNNER_NAME_PREFIX:-self-hosted}
+      RUNNER_WORKDIR: ${RUNNER_WORKDIR:-/tmp/runner/work}
+      LABELS: ${RUNNER_LABELS:-docker}
+      RUNNER_GROUP: ${RUNNER_GROUP:-Default}
+      EPHEMERAL: "true"
+      DISABLE_AUTO_UPDATE: "false"
+      # Docker configuration
+      DOCKER_HOST: tcp://docker-in-docker:2375
+      DOCKER_TLS_VERIFY: ""
+      DOCKER_CERT_PATH: ""
+      DOCKER_BUILDKIT: ${DOCKER_BUILDKIT:-1}
+      COMPOSE_DOCKER_CLI_BUILD: "1"
+      TZ: ${TIME_ZONE:-Etc/UTC}
+    volumes:
+      - tool-cache:/opt/hostedtoolcache
+    networks:
+      - runner-network
+    depends_on:
+      docker-in-docker:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'Runner.Listener' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: "${RUNNER_CPU_LIMIT:-16}"
+          memory: ${RUNNER_MEMORY_LIMIT:-32g}
+    logging:
+      driver: json-file
+      options:
+        max-size: ${LOG_MAX_SIZE:-50m}
+        max-file: "5"
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  runner-network:
+    name: ${STACK_NAME:-github-runner}_network
+    driver: bridge
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  dind-data:
+    name: ${STACK_NAME:-github-runner}-data
+  tool-cache:
+    name: ${STACK_NAME:-github-runner}-cache
