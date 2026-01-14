@@ -1,3 +1,10 @@
+## [0.3.11](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.3.10...v0.3.11) (2026-01-14)
+
+
+### Bug Fixes
+
+* Aktualisiere Container-Namen im Docker-Compose und korrigiere GitHub-URL in Skripten ([da53158](https://github.com/bauer-group/CI-GitHubRunner/commit/da531580f5a97fc26e9d75a2b600f388ca69321e))
+
 ## [0.3.10](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.3.9...v0.3.10) (2026-01-14)
 
 
