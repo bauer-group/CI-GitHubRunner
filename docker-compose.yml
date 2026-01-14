@@ -19,7 +19,7 @@ services:
   # ---------------------------------------------------------------------------
   docker-in-docker:
     image: docker:${DIND_IMAGE:-dind}
-    container_name: ${STACK_NAME:-github-runner}_container
+    container_name: ${STACK_NAME:-github-runner}-container
     hostname: docker-in-docker
     privileged: true
     restart: unless-stopped

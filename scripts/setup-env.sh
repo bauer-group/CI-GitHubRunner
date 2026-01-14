@@ -170,7 +170,7 @@ echo "     ./runner.sh status"
 echo ""
 echo "  4. Verify in GitHub:"
 if [ -n "$org_name" ]; then
-    echo "     https://github.com/${org_name}/settings/actions/runners"
+    echo "     https://github.com/organizations/${org_name}/settings/actions/runners"
 else
     echo "     ${repo_url}/settings/actions/runners"
 fi

@@ -45,7 +45,7 @@ get_github_url() {
         local org_name=$(grep "^ORG_NAME=" "$PROJECT_ROOT/.env" 2>/dev/null | cut -d'=' -f2)
         local repo_url=$(grep "^REPO_URL=" "$PROJECT_ROOT/.env" 2>/dev/null | cut -d'=' -f2)
         if [ -n "$org_name" ]; then
-            echo "https://github.com/${org_name}/settings/actions/runners"
+            echo "https://github.com/organizations/${org_name}/settings/actions/runners"
         elif [ -n "$repo_url" ]; then
             echo "${repo_url}/settings/actions/runners"
         else
