@@ -38,6 +38,7 @@ from pathlib import Path
 # Configuration
 PORT = 8765
 CALLBACK_PATH = "/callback"
+REPO_URL = "https://github.com/bauer-group/CI-GitHubRunner"  # Change this if you fork the repo
 
 # Colors for terminal output
 class Colors:
@@ -106,23 +107,21 @@ class GitHubAppSetup:
         # Build description with optional instance name
         if self.instance_name:
             description = (
-                f"Self-hosted GitHub Actions Runner ({self.instance_name}) for {self.org_name}. "
-                f"Ephemeral runners with Docker-in-Docker isolation for secure CI/CD builds. "
-                f"https://github.com/{self.org_name}/GitHubRunner"
+                f"Self-hosted GitHub Actions Runner ({self.instance_name}). "
+                f"Ephemeral runners with Docker-in-Docker isolation for secure CI/CD builds."
             )
         else:
             description = (
-                f"Self-hosted GitHub Actions Runner for {self.org_name}. "
-                f"Ephemeral runners with Docker-in-Docker isolation for secure CI/CD builds. "
-                f"https://github.com/{self.org_name}/GitHubRunner"
+                "Self-hosted GitHub Actions Runner. "
+                "Ephemeral runners with Docker-in-Docker isolation for secure CI/CD builds."
             )
 
         return {
             "name": self.app_name,
             "description": description,
-            "url": f"https://github.com/{self.org_name}/GitHubRunner",
+            "url": REPO_URL,
             "hook_attributes": {
-                "url": f"https://github.com/{self.org_name}/GitHubRunner",
+                "url": REPO_URL,
                 "active": False
             },
             "redirect_url": self.callback_url,
