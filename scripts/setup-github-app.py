@@ -125,6 +125,66 @@ class GitHubAppSetup:
             "default_events": []
         }
 
+    def get_redirect_html(self) -> str:
+        """Generate HTML page that auto-submits manifest to GitHub"""
+        manifest_json = json.dumps(self.get_manifest())
+        github_url = f"https://github.com/organizations/{self.org_name}/settings/apps/new"
+
+        return f"""<!DOCTYPE html>
+<html>
+<head>
+    <title>Creating GitHub App...</title>
+    <style>
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }}
+        .container {{
+            background: white;
+            padding: 3rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 500px;
+        }}
+        h1 {{ color: #667eea; margin-bottom: 1rem; }}
+        p {{ color: #666; line-height: 1.6; }}
+        .spinner {{
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 1rem auto;
+        }}
+        @keyframes spin {{
+            0% {{ transform: rotate(0deg); }}
+            100% {{ transform: rotate(360deg); }}
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="spinner"></div>
+        <h1>Creating GitHub App</h1>
+        <p>Redirecting to GitHub...<br>
+        Please wait.</p>
+    </div>
+    <form id="manifest-form" action="{github_url}" method="post">
+        <input type="hidden" name="manifest" value='{manifest_json.replace("'", "&#39;")}'>
+    </form>
+    <script>
+        document.getElementById('manifest-form').submit();
+    </script>
+</body>
+</html>"""
+
     def create_callback_handler(self):
         """Create an HTTP request handler for the OAuth callback"""
         app_setup = self
@@ -136,6 +196,14 @@ class GitHubAppSetup:
 
             def do_GET(self):
                 parsed = urllib.parse.urlparse(self.path)
+
+                # Serve the redirect page that POSTs manifest to GitHub
+                if parsed.path == "/" or parsed.path == "/start":
+                    self.send_response(200)
+                    self.send_header('Content-type', 'text/html; charset=utf-8')
+                    self.end_headers()
+                    self.wfile.write(app_setup.get_redirect_html().encode('utf-8'))
+                    return
 
                 if parsed.path == CALLBACK_PATH:
                     query = urllib.parse.parse_qs(parsed.query)
@@ -316,10 +384,7 @@ class GitHubAppSetup:
         print(f"App Name:     {Colors.CYAN}{self.app_name}{Colors.NC}")
         print()
 
-        # Generate manifest
-        manifest = self.get_manifest()
-        manifest_json = json.dumps(manifest)
-
+        # Show manifest info
         print_info("Manifest created with permissions:")
         print(f"  - Organization Self-hosted Runners: write")
         print(f"  - Repository Administration: write")
@@ -330,34 +395,34 @@ class GitHubAppSetup:
         server_thread = threading.Thread(target=self.start_server, daemon=True)
         server_thread.start()
 
-        # Build the GitHub URL
-        manifest_encoded = urllib.parse.quote(manifest_json)
-        github_url = f"https://github.com/organizations/{self.org_name}/settings/apps/new?manifest={manifest_encoded}"
+        # Local URL that serves the redirect page
+        local_url = f"http://localhost:{PORT}/"
 
         # Save URL to file for easy copying
         url_file = self.project_root / "github-app-url.txt"
         with open(url_file, 'w') as f:
-            f.write(github_url)
+            f.write(local_url)
 
         print()
         print(f"{Colors.GREEN}=" * 70 + Colors.NC)
         print(f"{Colors.GREEN}  Open this URL in your browser:{Colors.NC}")
         print(f"{Colors.GREEN}=" * 70 + Colors.NC)
         print()
-        print(github_url)
+        print(local_url)
         print()
         print(f"{Colors.GREEN}=" * 70 + Colors.NC)
         print()
-        print(f"{Colors.CYAN}URL also saved to:{Colors.NC} {url_file}")
+        print(f"This page will automatically redirect to GitHub with the")
+        print(f"app manifest pre-filled (name, permissions, etc.).")
         print()
-        print(f"{Colors.CYAN}SSH Port Forwarding required:{Colors.NC}")
+        print(f"{Colors.CYAN}SSH Port Forwarding (if on remote server):{Colors.NC}")
         print(f"  ssh -L {PORT}:localhost:{PORT} user@server")
         print()
 
         # Try to open browser (will likely fail on remote server)
         browser_opened = False
         try:
-            webbrowser.open(github_url)
+            webbrowser.open(local_url)
             browser_opened = True
             print_success("Browser opened")
         except Exception:
