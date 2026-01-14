@@ -1,3 +1,11 @@
+## [0.3.8](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.3.7...v0.3.8) (2026-01-14)
+
+
+### Bug Fixes
+
+* Aktualisiere die Handhabung des APP_PRIVATE_KEY in der Konfiguration und verbessere die Dokumentation ([4752d8a](https://github.com/bauer-group/CI-GitHubRunner/commit/4752d8abfccae24e596074a598890cd4bb73e77c))
+* Implement GitHub App authentication support and update configuration files ([bb63db0](https://github.com/bauer-group/CI-GitHubRunner/commit/bb63db0628f0e168c085a985c7a2bb5be825ebda))
+
 ## [0.3.7](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.3.6...v0.3.7) (2026-01-14)
 
 
