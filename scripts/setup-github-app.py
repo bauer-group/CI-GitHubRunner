@@ -114,6 +114,7 @@ class GitHubAppSetup:
             "description": description,
             "url": f"https://github.com/{self.org_name}",
             "hook_attributes": {
+                "url": f"https://github.com/{self.org_name}",
                 "active": False
             },
             "redirect_url": self.callback_url,
@@ -128,9 +129,9 @@ class GitHubAppSetup:
 
     def get_redirect_html(self) -> str:
         """Generate HTML page that auto-submits manifest to GitHub"""
-        # Create JSON string and escape it for JavaScript string literal
-        manifest_str = json.dumps(self.get_manifest())  # JSON string
-        manifest_js_literal = json.dumps(manifest_str)   # Escaped for JS string
+        # Create JSON and HTML-escape it for safe embedding in value attribute
+        manifest_json = json.dumps(self.get_manifest())
+        manifest_escaped = html.escape(manifest_json, quote=True)
         github_url = f"https://github.com/organizations/{self.org_name}/settings/apps/new"
 
         return f"""<!DOCTYPE html>
@@ -176,7 +177,7 @@ class GitHubAppSetup:
         }}
     </style>
 </head>
-<body>
+<body onload="document.getElementById('manifest-form').submit();">
     <div class="container">
         <div class="spinner"></div>
         <h1>Creating GitHub App</h1>
@@ -184,13 +185,8 @@ class GitHubAppSetup:
         Please wait.</p>
     </div>
     <form id="manifest-form" action="{github_url}" method="post">
-        <input type="hidden" name="manifest" id="manifest-input">
+        <input type="hidden" name="manifest" value="{manifest_escaped}">
     </form>
-    <script>
-        // Set manifest value directly (already JSON-encoded in Python)
-        document.getElementById('manifest-input').value = {manifest_js_literal};
-        document.getElementById('manifest-form').submit();
-    </script>
 </body>
 </html>"""
 
