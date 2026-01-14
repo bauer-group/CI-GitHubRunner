@@ -90,6 +90,7 @@ services:
       TZ: ${TIME_ZONE:-Etc/UTC}
     volumes:
       - tool-cache:/opt/hostedtoolcache
+      # GitHub App private key mount - see docker-compose.app-auth.yml
     networks:
       - runner-network
     depends_on:

@@ -353,10 +353,13 @@ class GitHubAppSetup:
             content = f.read()
 
         # Patterns to update or add
+        # Note: APP_PRIVATE_KEY is the path INSIDE the container
+        # APP_PRIVATE_KEY_FILE is the local file path for volume mounting
         updates = {
             'APP_ID': str(app_id),
             'APP_LOGIN': self.org_name,
-            'APP_PRIVATE_KEY': str(key_path),
+            'APP_PRIVATE_KEY': '/app/github-app.pem',
+            'APP_PRIVATE_KEY_FILE': str(key_path),
             'RUNNER_SCOPE': 'org',
             'ORG_NAME': self.org_name,
         }
@@ -491,7 +494,8 @@ class GitHubAppSetup:
         print("Configuration:")
         print(f"  APP_ID={app_id}")
         print(f"  APP_LOGIN={self.org_name}")
-        print(f"  APP_PRIVATE_KEY={key_path}")
+        print(f"  APP_PRIVATE_KEY=/app/github-app.pem  (container path)")
+        print(f"  APP_PRIVATE_KEY_FILE={key_path}  (local file)")
         print()
         print(f"{Colors.YELLOW}Important: Install the app in your organization:{Colors.NC}")
         print(f"  https://github.com/organizations/{self.org_name}/settings/apps/{app_slug}/installations")

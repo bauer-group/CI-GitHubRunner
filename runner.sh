@@ -54,23 +54,51 @@ get_github_url() {
     fi
 }
 
+# Get docker compose command with appropriate config files
+get_compose_cmd() {
+    # Check if COMPOSE_FILE is already set (user override)
+    if [ -n "${COMPOSE_FILE:-}" ]; then
+        echo "docker compose"
+        return
+    fi
+
+    # Check if GitHub App auth is configured
+    if [ -f "$PROJECT_ROOT/.env" ]; then
+        local app_id=$(grep "^APP_ID=" "$PROJECT_ROOT/.env" 2>/dev/null | cut -d'=' -f2)
+        local pem_file=$(grep "^APP_PRIVATE_KEY_FILE=" "$PROJECT_ROOT/.env" 2>/dev/null | cut -d'=' -f2)
+
+        # Default pem file location
+        pem_file="${pem_file:-./github-app.pem}"
+
+        # If APP_ID is set and PEM file exists, use app-auth override
+        if [ -n "$app_id" ] && [ -f "$PROJECT_ROOT/$pem_file" ]; then
+            echo "docker compose -f docker-compose.yml -f docker-compose.app-auth.yml"
+            return
+        fi
+    fi
+
+    # Default: just docker compose
+    echo "docker compose"
+}
+
 # =============================================================================
 # Commands
 # =============================================================================
 
 cmd_start() {
     local scale=${1:-1}
+    local compose_cmd=$(get_compose_cmd)
 
     print_header "Starting"
     check_env
 
     echo -e "${BLUE}Starting DinD and $scale runner(s)...${NC}"
-    docker compose up -d --scale agent="$scale"
+    $compose_cmd up -d --scale agent="$scale"
 
     echo ""
     echo -e "${GREEN}Started successfully!${NC}"
     echo ""
-    docker compose ps
+    $compose_cmd ps
     echo ""
     echo -e "${GREEN}Verify in GitHub:${NC}"
     echo "  $(get_github_url)"
@@ -78,20 +106,22 @@ cmd_start() {
 }
 
 cmd_stop() {
+    local compose_cmd=$(get_compose_cmd)
+
     print_header "Stopping"
 
     cd "$PROJECT_ROOT"
 
-    if ! docker compose ps --quiet 2>/dev/null | grep -q .; then
+    if ! $compose_cmd ps --quiet 2>/dev/null | grep -q .; then
         echo -e "${YELLOW}No containers running.${NC}"
         return 0
     fi
 
     echo -e "${BLUE}Stopping containers:${NC}"
-    docker compose ps --format "table {{.Name}}\t{{.Status}}"
+    $compose_cmd ps --format "table {{.Name}}\t{{.Status}}"
     echo ""
 
-    docker compose down
+    $compose_cmd down
 
     echo ""
     echo -e "${GREEN}Stopped successfully!${NC}"
@@ -101,11 +131,13 @@ cmd_stop() {
 }
 
 cmd_status() {
+    local compose_cmd=$(get_compose_cmd)
+
     print_header "Status"
 
     cd "$PROJECT_ROOT"
 
-    if ! docker compose ps --quiet 2>/dev/null | grep -q .; then
+    if ! $compose_cmd ps --quiet 2>/dev/null | grep -q .; then
         echo -e "${YELLOW}No containers running.${NC}"
         echo ""
         echo "Start with: ./runner.sh start"
@@ -113,11 +145,11 @@ cmd_status() {
     fi
 
     echo -e "${BLUE}Containers:${NC}"
-    docker compose ps
+    $compose_cmd ps
     echo ""
 
-    local runner_count=$(docker compose ps --format "{{.Name}}" 2>/dev/null | grep -c "agent" || echo "0")
-    local dind_status=$(docker compose ps --format "{{.Status}}" docker-in-docker 2>/dev/null | head -1 || echo "not running")
+    local runner_count=$($compose_cmd ps --format "{{.Name}}" 2>/dev/null | grep -c "agent" || echo "0")
+    local dind_status=$($compose_cmd ps --format "{{.Status}}" docker-in-docker 2>/dev/null | head -1 || echo "not running")
 
     echo -e "${BLUE}Summary:${NC}"
     echo "  DinD Status:    $dind_status"
@@ -125,7 +157,7 @@ cmd_status() {
     echo ""
 
     echo -e "${BLUE}Resource Usage:${NC}"
-    docker stats --no-stream --format "  {{.Name}}: CPU {{.CPUPerc}}, Mem {{.MemUsage}}" $(docker compose ps -q 2>/dev/null) 2>/dev/null || echo "  Unable to get stats"
+    docker stats --no-stream --format "  {{.Name}}: CPU {{.CPUPerc}}, Mem {{.MemUsage}}" $($compose_cmd ps -q 2>/dev/null) 2>/dev/null || echo "  Unable to get stats"
     echo ""
 
     echo -e "${GREEN}Verify in GitHub:${NC}"
@@ -135,6 +167,7 @@ cmd_status() {
 
 cmd_scale() {
     local scale=${1:-}
+    local compose_cmd=$(get_compose_cmd)
 
     if [ -z "$scale" ]; then
         echo -e "${RED}Error: Please specify number of runners${NC}"
@@ -151,14 +184,14 @@ cmd_scale() {
     check_env
 
     echo -e "${BLUE}Scaling runners...${NC}"
-    docker compose up -d --scale agent="$scale"
+    $compose_cmd up -d --scale agent="$scale"
 
     echo ""
     echo -e "${GREEN}Done!${NC}"
     echo ""
 
     echo -e "${BLUE}Current status:${NC}"
-    docker compose ps --format "table {{.Name}}\t{{.Status}}" | grep -E "(NAME|agent)"
+    $compose_cmd ps --format "table {{.Name}}\t{{.Status}}" | grep -E "(NAME|agent)"
     echo ""
 
     echo -e "${GREEN}Verify in GitHub:${NC}"
@@ -168,6 +201,7 @@ cmd_scale() {
 
 cmd_cleanup() {
     local full_cleanup=false
+    local compose_cmd=$(get_compose_cmd)
 
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -186,7 +220,7 @@ cmd_cleanup() {
     cd "$PROJECT_ROOT"
 
     echo -e "${BLUE}Stopping containers...${NC}"
-    docker compose down --remove-orphans 2>/dev/null || true
+    $compose_cmd down --remove-orphans 2>/dev/null || true
 
     echo -e "${BLUE}Cleaning up runner work directories...${NC}"
     docker volume ls -q | grep -E "runner.*work" | xargs -r docker volume rm 2>/dev/null || true
@@ -196,7 +230,7 @@ cmd_cleanup() {
         echo -e "${YELLOW}Performing full cleanup...${NC}"
 
         echo -e "${BLUE}Removing all project volumes...${NC}"
-        docker compose down -v 2>/dev/null || true
+        $compose_cmd down -v 2>/dev/null || true
 
         echo -e "${BLUE}Pruning unused Docker images...${NC}"
         docker image prune -af 2>/dev/null || true
@@ -321,15 +355,16 @@ cmd_deploy() {
 
 cmd_logs() {
     local service=${1:-}
+    local compose_cmd=$(get_compose_cmd)
 
     print_header "Logs"
 
     cd "$PROJECT_ROOT"
 
     if [ -n "$service" ]; then
-        docker compose logs -f "$service"
+        $compose_cmd logs -f "$service"
     else
-        docker compose logs -f
+        $compose_cmd logs -f
     fi
 }
 
