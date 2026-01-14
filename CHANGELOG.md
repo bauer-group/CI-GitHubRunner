@@ -1,3 +1,10 @@
+## [0.3.4](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.3.3...v0.3.4) (2026-01-14)
+
+
+### Bug Fixes
+
+* Entferne die Speicherung und Bereinigung der URL-Datei im GitHub App-Setup ([3ea2705](https://github.com/bauer-group/CI-GitHubRunner/commit/3ea27050aa91eeae8838072abfa3c37ebfd1cbda))
+
 ## [0.3.3](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.3.2...v0.3.3) (2026-01-14)
 
 
