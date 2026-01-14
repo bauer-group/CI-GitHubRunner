@@ -353,12 +353,12 @@ class GitHubAppSetup:
             content = f.read()
 
         # Patterns to update or add
-        # APP_PRIVATE_KEY is the host path to PEM file (relative to compose directory)
+        # APP_PRIVATE_KEY is the absolute host path to PEM file
         # The override file mounts it to /opt/github-app.pem inside the container
         updates = {
             'APP_ID': str(app_id),
             'APP_LOGIN': self.org_name,
-            'APP_PRIVATE_KEY': './github-app.pem',
+            'APP_PRIVATE_KEY': str(key_path),
             'RUNNER_SCOPE': 'org',
             'ORG_NAME': self.org_name,
         }

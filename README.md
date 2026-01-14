@@ -141,7 +141,7 @@ RUNNER_SCOPE=org
 ORG_NAME=your-org-name
 ```
 
-**Hinweis:** `APP_PRIVATE_KEY` ist der Host-Pfad zur PEM-Datei (relativ zum Compose-Verzeichnis). Das `runner.sh` Script erkennt automatisch GitHub App Auth und mountet die Datei nach `/opt/github-app.pem` im Container.
+**Hinweis:** `APP_PRIVATE_KEY` ist der Host-Pfad zur PEM-Datei. Das Setup-Script schreibt den absoluten Pfad (sicherer). Relative Pfade (`./github-app.pem`) funktionieren auch. Das `runner.sh` Script erkennt automatisch GitHub App Auth und mountet die Datei nach `/opt/github-app.pem` im Container.
 
 ### Step 2: Prepare the Server
 
