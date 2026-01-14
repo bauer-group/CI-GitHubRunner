@@ -128,7 +128,9 @@ class GitHubAppSetup:
 
     def get_redirect_html(self) -> str:
         """Generate HTML page that auto-submits manifest to GitHub"""
-        manifest_json = json.dumps(self.get_manifest())
+        # Create JSON string and escape it for JavaScript string literal
+        manifest_str = json.dumps(self.get_manifest())  # JSON string
+        manifest_js_literal = json.dumps(manifest_str)   # Escaped for JS string
         github_url = f"https://github.com/organizations/{self.org_name}/settings/apps/new"
 
         return f"""<!DOCTYPE html>
@@ -143,28 +145,24 @@ class GitHubAppSetup:
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            background: #1a1a1a;
+            background: #F2F2F2;
         }}
         .container {{
-            background: #242424;
-            border: 1px solid #333333;
+            background: #FFFFFF;
+            border: 1px solid #EFEFEF;
             padding: 3rem;
             border-radius: 16px;
-            box-shadow: 0 20px 40px rgba(255, 133, 0, 0.1);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
             text-align: center;
             max-width: 500px;
         }}
         h1 {{
-            color: #ffffff;
+            color: #2E3236;
             margin-bottom: 1rem;
-            background: linear-gradient(135deg, #ffffff 0%, #FDBA74 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
         }}
-        p {{ color: #a0a0a0; line-height: 1.6; }}
+        p {{ color: #5B5B5B; line-height: 1.6; }}
         .spinner {{
-            border: 4px solid #333333;
+            border: 4px solid #EFEFEF;
             border-top: 4px solid #FF8500;
             border-radius: 50%;
             width: 40px;
@@ -186,9 +184,11 @@ class GitHubAppSetup:
         Please wait.</p>
     </div>
     <form id="manifest-form" action="{github_url}" method="post">
-        <input type="hidden" name="manifest" value="{html.escape(manifest_json)}">
+        <input type="hidden" name="manifest" id="manifest-input">
     </form>
     <script>
+        // Set manifest value directly (already JSON-encoded in Python)
+        document.getElementById('manifest-input').value = {manifest_js_literal};
         document.getElementById('manifest-form').submit();
     </script>
 </body>
@@ -237,19 +237,19 @@ class GitHubAppSetup:
                                     align-items: center;
                                     min-height: 100vh;
                                     margin: 0;
-                                    background: #1a1a1a;
+                                    background: #F2F2F2;
                                 }
                                 .container {
-                                    background: #242424;
-                                    border: 1px solid #333333;
+                                    background: #FFFFFF;
+                                    border: 1px solid #EFEFEF;
                                     padding: 3rem;
                                     border-radius: 16px;
-                                    box-shadow: 0 20px 40px rgba(255, 133, 0, 0.1);
+                                    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
                                     text-align: center;
                                     max-width: 500px;
                                 }
-                                h1 { color: #22c55e; margin-bottom: 1rem; }
-                                p { color: #a0a0a0; line-height: 1.6; }
+                                h1 { color: #FF8500; margin-bottom: 1rem; }
+                                p { color: #5B5B5B; line-height: 1.6; }
                                 .icon { font-size: 4rem; margin-bottom: 1rem; }
                             </style>
                         </head>
@@ -259,7 +259,7 @@ class GitHubAppSetup:
                                 <h1>GitHub App Created!</h1>
                                 <p>The app has been created successfully.<br>
                                 You can close this browser tab now.</p>
-                                <p style="color: #666; font-size: 0.9rem; margin-top: 2rem;">
+                                <p style="color: #888888; font-size: 0.9rem; margin-top: 2rem;">
                                     Return to the terminal to complete the setup.
                                 </p>
                             </div>
