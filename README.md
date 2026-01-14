@@ -831,10 +831,24 @@ Erstellt eine GitHub App mit minimalen Berechtigungen. **Empfohlen statt PAT!**
 
 Das Python-Tool öffnet den Browser, erstellt die App und konfiguriert alles automatisch:
 
-1. Öffnet GitHub im Browser zur App-Erstellung
-2. Empfängt die Credentials automatisch via Callback
-3. Speichert den Private Key
-4. Aktualisiert die `.env`
+1. Startet lokalen Callback-Server (Port 8765)
+2. Öffnet GitHub im Browser zur App-Erstellung
+3. Empfängt die Credentials automatisch via Callback
+4. Speichert den Private Key
+5. Aktualisiert die `.env`
+
+**Bei Remote-Server (SSH):**
+
+```bash
+# SSH mit Port-Forwarding
+ssh -L 8765:localhost:8765 user@server
+
+# Script starten - URL wird direkt angezeigt
+./scripts/create-github-app.sh
+
+# URL aus Terminal kopieren → im lokalen Browser öffnen
+# Callback kommt über Port-Forward zurück zum Server
+```
 
 **Vorteile gegenüber PAT:**
 

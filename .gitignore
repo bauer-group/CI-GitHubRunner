@@ -8,6 +8,12 @@
 .env.*.local
 *.env.backup.*
 
+# GitHub App files (contain secrets)
+github-app.pem
+github-app-*.pem
+github-app-url.txt
+github-app-manifest.json
+
 # IDE
 .idea/
 .vscode/

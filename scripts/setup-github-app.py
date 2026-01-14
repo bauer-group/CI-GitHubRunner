@@ -334,28 +334,45 @@ class GitHubAppSetup:
         manifest_encoded = urllib.parse.quote(manifest_json)
         github_url = f"https://github.com/organizations/{self.org_name}/settings/apps/new?manifest={manifest_encoded}"
 
-        print()
-        print(f"{Colors.GREEN}Opening browser to create the GitHub App...{Colors.NC}")
-        print()
-        print_warning("If the browser doesn't open, copy this URL:")
-        print(f"\n{Colors.CYAN}{github_url[:100]}...{Colors.NC}\n")
+        # Save URL to file for easy copying
+        url_file = self.project_root / "github-app-url.txt"
+        with open(url_file, 'w') as f:
+            f.write(github_url)
 
-        # Open browser
+        print()
+        print(f"{Colors.GREEN}=" * 70 + Colors.NC)
+        print(f"{Colors.GREEN}  Open this URL in your browser:{Colors.NC}")
+        print(f"{Colors.GREEN}=" * 70 + Colors.NC)
+        print()
+        print(github_url)
+        print()
+        print(f"{Colors.GREEN}=" * 70 + Colors.NC)
+        print()
+        print(f"{Colors.CYAN}URL also saved to:{Colors.NC} {url_file}")
+        print()
+        print(f"{Colors.CYAN}SSH Port Forwarding required:{Colors.NC}")
+        print(f"  ssh -L {PORT}:localhost:{PORT} user@server")
+        print()
+
+        # Try to open browser (will likely fail on remote server)
+        browser_opened = False
         try:
             webbrowser.open(github_url)
-        except Exception as e:
-            print_warning(f"Could not open browser: {e}")
-            print("Please open the URL manually.")
+            browser_opened = True
+            print_success("Browser opened")
+        except Exception:
+            pass  # Expected on remote servers
 
-        print()
-        print(f"{Colors.YELLOW}Waiting for GitHub callback...{Colors.NC}")
-        print("(Complete the app creation in your browser)")
+        print(f"{Colors.YELLOW}Waiting for GitHub callback on port {PORT}...{Colors.NC}")
         print()
 
         # Wait for callback
         server_thread.join(timeout=300)  # 5 minute timeout
 
         if not self.received_code:
+            # Cleanup URL file on failure
+            if url_file.exists():
+                url_file.unlink()
             print_error("Timeout waiting for callback. Please try again.")
             return False
 
@@ -394,6 +411,11 @@ class GitHubAppSetup:
         self.update_env_file(app_id, key_path)
         print_success(".env file updated!")
         print()
+
+        # Cleanup temporary files
+        url_file = self.project_root / "github-app-url.txt"
+        if url_file.exists():
+            url_file.unlink()
 
         # Final instructions
         print_header("Setup Complete!")
