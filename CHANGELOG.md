@@ -1,3 +1,10 @@
+## [0.3.2](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.3.1...v0.3.2) (2026-01-14)
+
+
+### Bug Fixes
+
+* Füge Unterstützung für GitHub App-URL-Speicherung und SSH-Port-Forwarding hinzu ([60d6aa2](https://github.com/bauer-group/CI-GitHubRunner/commit/60d6aa2ce6478ae95eba537736d4e04797de635b))
+
 ## [0.3.1](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.3.0...v0.3.1) (2026-01-14)
 
 
