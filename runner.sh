@@ -76,6 +76,9 @@ get_compose_cmd() {
             if [ -f "$pem_path" ]; then
                 echo "docker compose -f docker-compose.yml -f docker-compose.app-auth.yml"
                 return
+            else
+                echo -e "${YELLOW}Warning: APP_ID set but PEM file not found: $pem_file${NC}" >&2
+                echo -e "${YELLOW}Falling back to ACCESS_TOKEN authentication${NC}" >&2
             fi
         fi
     fi
