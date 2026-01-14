@@ -1,3 +1,11 @@
+## [0.3.9](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.3.8...v0.3.9) (2026-01-14)
+
+
+### Bug Fixes
+
+* Aktualisiere den Pfad zur APP_PRIVATE_KEY in der Konfiguration und verbessere die Dokumentation ([ae2e249](https://github.com/bauer-group/CI-GitHubRunner/commit/ae2e249dab55b5e49344281689f0ccefd68994f9))
+* Füge Warnmeldungen hinzu, wenn die PEM-Datei für APP_ID nicht gefunden wird und wechsle zu ACCESS_TOKEN-Authentifizierung ([93c5e1d](https://github.com/bauer-group/CI-GitHubRunner/commit/93c5e1d0d6cedec8487316f71511faec6670cd3f))
+
 ## [0.3.8](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.3.7...v0.3.8) (2026-01-14)
 
 
