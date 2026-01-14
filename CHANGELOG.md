@@ -1,3 +1,10 @@
+## [0.3.6](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.3.5...v0.3.6) (2026-01-14)
+
+
+### Bug Fixes
+
+* Aktualisiere die Generierung des Redirect-HTML zur sicheren Einbettung des Manifests ([3893c8c](https://github.com/bauer-group/CI-GitHubRunner/commit/3893c8cad9d88c0cc31b776e09aee61d2aab7f23))
+
 ## [0.3.5](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.3.4...v0.3.5) (2026-01-14)
 
 
