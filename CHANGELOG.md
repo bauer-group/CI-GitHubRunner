@@ -1,3 +1,10 @@
+## [0.3.1](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.3.0...v0.3.1) (2026-01-14)
+
+
+### Bug Fixes
+
+* Aktualisiere Ressourcengrenzen für DinD und entferne überflüssige Limits für Runner-Agenten ([214c940](https://github.com/bauer-group/CI-GitHubRunner/commit/214c9405fe7d62acbe08ad5478c1b4d2b98652d4))
+
 # [0.3.0](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.2.0...v0.3.0) (2026-01-14)
 
 
