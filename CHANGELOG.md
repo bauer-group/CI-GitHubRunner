@@ -1,3 +1,11 @@
+## [0.3.3](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.3.2...v0.3.3) (2026-01-14)
+
+
+### Bug Fixes
+
+* Aktualisiere das Styling der GitHub App-Bestätigungsseite und verbessere die HTML-Sicherheit ([be85384](https://github.com/bauer-group/CI-GitHubRunner/commit/be8538428379841d32990b75b71d3dce02cc28fc))
+* Füge automatische Umleitung zur GitHub-App-Erstellung hinzu ([c2e0c29](https://github.com/bauer-group/CI-GitHubRunner/commit/c2e0c291bd69288e71b9a5981571af896462237d))
+
 ## [0.3.2](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.3.1...v0.3.2) (2026-01-14)
 
 
