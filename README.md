@@ -133,6 +133,17 @@ The script:
 
    > **Note:** For organization runners, no repository access is needed!
 
+   **How does the runner access repository data?**
+
+   The GitHub App/PAT is only used for **runner registration**. During job execution, GitHub automatically provides a temporary `GITHUB_TOKEN` with repository access:
+
+   ```text
+   Registration (once):     GitHub App ──▶ Register runner with GitHub
+   Job Execution (per job): GitHub ──▶ Runner receives GITHUB_TOKEN ──▶ Clone repo
+   ```
+
+   This is more secure: the registration credentials need no repo access, and each job gets its own short-lived, scoped token.
+
 5. Click **"Create GitHub App"**
 6. Note the **App ID** from the app settings page
 7. Generate and download a **Private Key** (.pem file)
