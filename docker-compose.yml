@@ -64,11 +64,11 @@ services:
     image: myoung34/github-runner:latest
     restart: unless-stopped
     environment:
-      # Authentication: Use either ACCESS_TOKEN or APP_ID/APP_LOGIN/APP_PRIVATE_KEY
+      # Authentication: Use ACCESS_TOKEN (PAT) or APP_ID/APP_LOGIN (GitHub App)
+      # For GitHub App: APP_PRIVATE_KEY is set by docker-compose.app-auth.yml override
       ACCESS_TOKEN: ${GITHUB_ACCESS_TOKEN:-}
       APP_ID: ${APP_ID:-}
       APP_LOGIN: ${APP_LOGIN:-}
-      APP_PRIVATE_KEY: ${APP_PRIVATE_KEY:-}
       # Runner configuration
       # For org runners: Set ORG_NAME (e.g., "bauer-group")
       # For repo runners: Set REPO_URL (e.g., "https://github.com/org/repo")

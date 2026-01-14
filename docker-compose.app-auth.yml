@@ -9,16 +9,19 @@
 # Or set COMPOSE_FILE in your environment:
 #   export COMPOSE_FILE=docker-compose.yml:docker-compose.app-auth.yml
 #
-# APP_PRIVATE_KEY in .env = Host path to PEM file (e.g., ./github-app.pem)
-# Container path is fixed: /opt/github-app.pem
+# APP_PRIVATE_KEY_FILE in .env = Host path to PEM file
+# The entrypoint reads the file and sets APP_PRIVATE_KEY content automatically
 # =============================================================================
 
 services:
   agent:
-    environment:
-      # Fixed container path - overrides base config
-      APP_PRIVATE_KEY: /opt/github-app.pem
     volumes:
       - tool-cache:/opt/hostedtoolcache
-      # Mount host PEM file to fixed container path
-      - ${APP_PRIVATE_KEY:-./github-app.pem}:/opt/github-app.pem:ro
+      # Mount host PEM file to container
+      - ${APP_PRIVATE_KEY_FILE:-./github-app.pem}:/opt/github-app.pem:ro
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        export APP_PRIVATE_KEY="$$(cat /opt/github-app.pem)"
+        exec /entrypoint.sh ./bin/Runner.Listener run --startuptype service

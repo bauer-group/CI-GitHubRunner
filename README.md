@@ -157,12 +157,12 @@ The script:
 
 APP_ID=123456
 APP_LOGIN=your-org-name
-APP_PRIVATE_KEY=./github-app.pem
+APP_PRIVATE_KEY_FILE=./github-app.pem
 RUNNER_SCOPE=org
 ORG_NAME=your-org-name
 ```
 
-**Note:** `APP_PRIVATE_KEY` is the host path to the PEM file. The setup script writes the absolute path (more secure). Relative paths (`./github-app.pem`) also work. The `runner.sh` script automatically detects GitHub App auth and mounts the file to `/opt/github-app.pem` in the container.
+**Note:** `APP_PRIVATE_KEY_FILE` is the host path to the PEM file. The setup script writes the absolute path (more secure). Relative paths (`./github-app.pem`) also work. The `runner.sh` script automatically detects GitHub App auth, mounts the file into the container, and reads the content at startup.
 
 ### Step 2: Prepare the Server
 

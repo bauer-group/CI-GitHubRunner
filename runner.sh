@@ -65,7 +65,7 @@ get_compose_cmd() {
     # Check if GitHub App auth is configured
     if [ -f "$PROJECT_ROOT/.env" ]; then
         local app_id=$(grep "^APP_ID=" "$PROJECT_ROOT/.env" 2>/dev/null | cut -d'=' -f2)
-        local pem_file=$(grep "^APP_PRIVATE_KEY=" "$PROJECT_ROOT/.env" 2>/dev/null | cut -d'=' -f2)
+        local pem_file=$(grep "^APP_PRIVATE_KEY_FILE=" "$PROJECT_ROOT/.env" 2>/dev/null | cut -d'=' -f2)
 
         # If APP_ID is set and PEM file exists, use app-auth override
         if [ -n "$app_id" ] && [ -n "$pem_file" ]; then
