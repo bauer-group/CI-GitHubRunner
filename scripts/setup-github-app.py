@@ -19,6 +19,7 @@ Requirements:
     - No external dependencies (uses only standard library)
 """
 
+import html
 import http.server
 import json
 import os
@@ -142,21 +143,29 @@ class GitHubAppSetup:
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #1a1a1a;
         }}
         .container {{
-            background: white;
+            background: #242424;
+            border: 1px solid #333333;
             padding: 3rem;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(255, 133, 0, 0.1);
             text-align: center;
             max-width: 500px;
         }}
-        h1 {{ color: #667eea; margin-bottom: 1rem; }}
-        p {{ color: #666; line-height: 1.6; }}
+        h1 {{
+            color: #ffffff;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #ffffff 0%, #FDBA74 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }}
+        p {{ color: #a0a0a0; line-height: 1.6; }}
         .spinner {{
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
+            border: 4px solid #333333;
+            border-top: 4px solid #FF8500;
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -177,7 +186,7 @@ class GitHubAppSetup:
         Please wait.</p>
     </div>
     <form id="manifest-form" action="{github_url}" method="post">
-        <input type="hidden" name="manifest" value='{manifest_json.replace("'", "&#39;")}'>
+        <input type="hidden" name="manifest" value="{html.escape(manifest_json)}">
     </form>
     <script>
         document.getElementById('manifest-form').submit();
@@ -228,18 +237,19 @@ class GitHubAppSetup:
                                     align-items: center;
                                     min-height: 100vh;
                                     margin: 0;
-                                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                    background: #1a1a1a;
                                 }
                                 .container {
-                                    background: white;
+                                    background: #242424;
+                                    border: 1px solid #333333;
                                     padding: 3rem;
-                                    border-radius: 12px;
-                                    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                                    border-radius: 16px;
+                                    box-shadow: 0 20px 40px rgba(255, 133, 0, 0.1);
                                     text-align: center;
                                     max-width: 500px;
                                 }
                                 h1 { color: #22c55e; margin-bottom: 1rem; }
-                                p { color: #666; line-height: 1.6; }
+                                p { color: #a0a0a0; line-height: 1.6; }
                                 .icon { font-size: 4rem; margin-bottom: 1rem; }
                             </style>
                         </head>
@@ -249,7 +259,7 @@ class GitHubAppSetup:
                                 <h1>GitHub App Created!</h1>
                                 <p>The app has been created successfully.<br>
                                 You can close this browser tab now.</p>
-                                <p style="color: #999; font-size: 0.9rem; margin-top: 2rem;">
+                                <p style="color: #666; font-size: 0.9rem; margin-top: 2rem;">
                                     Return to the terminal to complete the setup.
                                 </p>
                             </div>
