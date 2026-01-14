@@ -408,11 +408,6 @@ class GitHubAppSetup:
         # Local URL that serves the redirect page
         local_url = f"http://localhost:{PORT}/"
 
-        # Save URL to file for easy copying
-        url_file = self.project_root / "github-app-url.txt"
-        with open(url_file, 'w') as f:
-            f.write(local_url)
-
         print()
         print(f"{Colors.GREEN}=" * 70 + Colors.NC)
         print(f"{Colors.GREEN}  Open this URL in your browser:{Colors.NC}")
@@ -445,9 +440,6 @@ class GitHubAppSetup:
         server_thread.join(timeout=300)  # 5 minute timeout
 
         if not self.received_code:
-            # Cleanup URL file on failure
-            if url_file.exists():
-                url_file.unlink()
             print_error("Timeout waiting for callback. Please try again.")
             return False
 
@@ -486,11 +478,6 @@ class GitHubAppSetup:
         self.update_env_file(app_id, key_path)
         print_success(".env file updated!")
         print()
-
-        # Cleanup temporary files
-        url_file = self.project_root / "github-app-url.txt"
-        if url_file.exists():
-            url_file.unlink()
 
         # Final instructions
         print_header("Setup Complete!")
