@@ -160,15 +160,15 @@ docker compose version
 
 #### Initial Deployment
 
-Use the deployment script for first-time setup:
+Use the unified runner script for first-time setup:
 
 ```bash
-# Make deploy script executable and run initial setup
-chmod +x scripts/deploy.sh
-./scripts/deploy.sh --init
+# Make runner script executable and run initial setup
+chmod +x runner.sh
+./runner.sh deploy --init
 ```
 
-The deploy script will:
+The deploy command will:
 
 1. Configure git (disable fileMode for cross-platform compatibility)
 2. Pull latest changes from remote
@@ -182,7 +182,7 @@ The deploy script will:
 git config core.fileMode false
 
 # Make scripts executable
-chmod +x scripts/*.sh tools/*.sh
+chmod +x runner.sh scripts/*.sh tools/*.sh
 ```
 
 ### Step 3: Configure Environment
@@ -739,289 +739,136 @@ Self-Hosted Runner haben **keinen Zugriff** auf den GitHub Actions Cache Service
 
 ## Scaling
 
-Use the scale script to manage runner instances:
-
-**Linux/macOS:**
-
 ```bash
 # Start with 1 runner (default)
-./scripts/scale.sh
+./runner.sh start
 
-# Scale to 4 runners
-./scripts/scale.sh 4
+# Start 4 runners
+./runner.sh start 4
 
 # Scale to 8 runners
-./scripts/scale.sh 8
+./runner.sh scale 8
 
 # Scale back down
-./scripts/scale.sh 2
+./runner.sh scale 2
 ```
 
 **Windows (via Tools Container):**
 
 ```powershell
-.\tools\run.ps1 -Script "./scripts/scale.sh 4"
-```
-
-**Or use Docker Compose directly:**
-
-```bash
-docker compose up -d --scale agent=4
+.\tools\run.ps1 -Script "./runner.sh scale 4"
 ```
 
 All runners share a single DinD instance (shared Docker cache for faster builds).
 
 ## Scripts
 
-Management-Scripts für den Betrieb der Runner-Umgebung.
+### runner.sh - Unified Management Tool
 
-### Übersicht
-
-| Script | Beschreibung |
-|--------|--------------|
-| `deploy.sh` | Deployment und Updates auf dem Host |
-| `setup-env.sh` | Interaktive Umgebungskonfiguration |
-| `create-github-app.sh` | GitHub App erstellen und .env konfigurieren |
-| `start.sh` | Runner starten |
-| `stop.sh` | Alle Runner stoppen |
-| `status.sh` | Status und Ressourcen anzeigen |
-| `scale.sh` | Runner skalieren |
-| `cleanup.sh` | Docker-Ressourcen bereinigen |
-
-### deploy.sh
-
-Deployment-Script für Erstinstallation und Updates auf dem Runner-Host.
+Zentrales Script für alle Runner-Operationen.
 
 ```bash
-# Erstinstallation (konfiguriert git, macht Scripts ausführbar, startet Setup)
-./scripts/deploy.sh --init
-
-# Update (pullt Änderungen, aktualisiert Berechtigungen)
-./scripts/deploy.sh
+./runner.sh <command> [options]
 ```
 
-**Optionen:**
+**Befehle:**
 
-- `--init`, `-i` - Erstinstallation mit interaktivem Setup
+| Command | Beschreibung |
+|---------|--------------|
+| `start [N]` | N Runner starten (Standard: 1) |
+| `stop` | Alle Runner stoppen |
+| `status` | Status und Ressourcen anzeigen |
+| `scale N` | Auf N Runner skalieren |
+| `logs [service]` | Logs anzeigen (agent, docker-in-docker) |
+| `cleanup` | Basis-Cleanup (Work-Verzeichnisse) |
+| `cleanup --full` | Vollständiger Cleanup (Volumes, Images) |
+| `deploy` | Updates pullen, Berechtigungen setzen |
+| `deploy --init` | Erstinstallation mit Setup |
+| `help` | Hilfe anzeigen |
 
-**Was passiert:**
+**Beispiele:**
 
-1. Konfiguriert git (`core.fileMode false` für Cross-Platform-Kompatibilität)
-2. Pullt neueste Änderungen vom Remote
-3. Macht alle Scripts ausführbar (`chmod +x`)
-4. Bei `--init`: Startet interaktives Setup falls keine `.env` existiert
+```bash
+# Runner starten
+./runner.sh start 4        # 4 parallele Runner starten
+./runner.sh status         # Status anzeigen
+./runner.sh scale 8        # Auf 8 Runner skalieren
+./runner.sh logs agent     # Runner-Logs verfolgen
 
-### setup-env.sh
+# Wartung
+./runner.sh cleanup --full # Docker-Cleanup
+./runner.sh deploy         # Updates einspielen
 
-Interaktiver Assistent für die Erstkonfiguration der `.env`-Datei.
+# Erstinstallation
+./runner.sh deploy --init  # Initiales Setup
+```
+
+### Setup-Scripts
+
+Diese Scripts bleiben separat für die Erstkonfiguration:
+
+#### setup-env.sh
+
+Interaktiver Assistent für die `.env`-Konfiguration.
 
 ```bash
 ./scripts/setup-env.sh
 ```
 
-**Abfragt:**
+Fragt ab: GitHub Token, Organisation/Repo, Runner-Scope, Labels, Gruppe.
 
-- GitHub Access Token (PAT oder App)
-- Organisation/Repository URL
-- Runner-Scope (org/repo)
-- Runner-Labels
-- Runner-Gruppe
+#### create-github-app.sh
 
-**Ausgabe:** Erstellt/aktualisiert die `.env`-Datei mit den eingegebenen Werten.
-
-### create-github-app.sh
-
-Erstellt eine GitHub App mit minimalen Berechtigungen für Self-Hosted Runner.
+Erstellt eine GitHub App mit minimalen Berechtigungen. **Empfohlen statt PAT!**
 
 ```bash
-./scripts/create-github-app.sh
+./scripts/create-github-app.sh           # Automatisch (Python)
+./scripts/create-github-app.sh --manual  # Manuelle Anleitung
 ```
+
+**Automatischer Modus (Standard):**
+
+Das Python-Tool öffnet den Browser, erstellt die App und konfiguriert alles automatisch:
+
+1. Öffnet GitHub im Browser zur App-Erstellung
+2. Empfängt die Credentials automatisch via Callback
+3. Speichert den Private Key
+4. Aktualisiert die `.env`
 
 **Vorteile gegenüber PAT:**
 
 - Nur minimale Berechtigungen (nicht voller `admin:org` Zugriff)
 - Automatische Token-Rotation
 - Bessere Audit-Logs
-
-**Ablauf:**
-
-1. Fragt nach Organisation und App-Name
-2. Generiert App-Manifest mit korrekten Permissions
-3. Zeigt URL für Manifest-basierte App-Erstellung
-4. Optional: Konfiguriert automatisch die `.env` Datei
-
-**Interaktive .env Konfiguration:**
-
-Nach der App-Erstellung in GitHub kann das Script die `.env` automatisch konfigurieren:
-
-- Fragt nach App ID (Zahl von der GitHub App Seite)
-- Fragt nach Pfad zur Private Key Datei (.pem)
-- Setzt `APP_ID`, `APP_LOGIN`, `APP_PRIVATE_KEY`
-- Kommentiert `GITHUB_ACCESS_TOKEN` aus
-- Setzt `RUNNER_SCOPE=org` und `ORG_NAME`
-
-### start.sh
-
-Startet die Runner-Umgebung (DinD + Runner).
-
-```bash
-# Einen Runner starten (Standard)
-./scripts/start.sh
-
-# Mehrere Runner starten
-./scripts/start.sh 4
-```
-
-**Parameter:**
-
-- `[N]` - Anzahl der Runner (optional, Standard: 1)
-
-**Was passiert:**
-
-1. Prüft ob `.env` existiert
-2. Startet Docker-in-Docker Container
-3. Startet N Runner-Container
-4. Zeigt Container-Status an
-5. Gibt Link zur GitHub-Verifizierung aus
-
-### stop.sh
-
-Stoppt alle Runner und den DinD-Container.
-
-```bash
-./scripts/stop.sh
-```
-
-**Was passiert:**
-
-1. Stoppt alle laufenden Runner
-2. Stoppt Docker-in-Docker Container
-3. Netzwerke und Volumes bleiben erhalten
-
-### status.sh
-
-Zeigt den aktuellen Status und Ressourcenverbrauch an.
-
-```bash
-./scripts/status.sh
-```
-
-**Ausgabe:**
-
-- Container-Status (running/stopped)
-- Ressourcenverbrauch (CPU, RAM)
-- Disk-Nutzung
-- Netzwerk-Informationen
-- Link zu GitHub Runner-Settings
-
-### scale.sh
-
-Skaliert die Anzahl der laufenden Runner.
-
-```bash
-# Auf 4 Runner skalieren
-./scripts/scale.sh 4
-
-# Auf 1 Runner reduzieren
-./scripts/scale.sh 1
-
-# Auf 8 Runner hochskalieren
-./scripts/scale.sh 8
-```
-
-**Parameter:**
-
-- `N` - Zielanzahl der Runner (erforderlich)
-
-**Hinweis:** Nur die Runner werden skaliert, DinD bleibt ein einzelner Container (shared Docker cache).
-
-### cleanup.sh
-
-Bereinigt Docker-Ressourcen.
-
-```bash
-# Standard-Cleanup (Work-Verzeichnisse)
-./scripts/cleanup.sh
-
-# Vollständiger Cleanup (inkl. Volumes, Images)
-./scripts/cleanup.sh --full
-```
-
-**Optionen:**
-
-- `--full` - Entfernt auch Volumes und unbenutzte Images
-
-**Standard-Cleanup entfernt:**
-
-- Gestoppte Container
-- Unbenutzte Netzwerke
-- Dangling Images
-- Build-Cache
-
-**Full-Cleanup entfernt zusätzlich:**
-
-- Alle Volumes
-- Alle ungenutzten Images
+- Kein manuelles Key-Management
 
 ### Windows-Nutzung
 
 Auf Windows können die Scripts über den Tools-Container ausgeführt werden:
-
-**PowerShell:**
 
 ```powershell
 # Interaktiver Modus
 .\tools\run.ps1
 
 # Script direkt ausführen
-.\tools\run.ps1 -Script "./scripts/start.sh 4"
-.\tools\run.ps1 -Script "./scripts/status.sh"
-.\tools\run.ps1 -Script "./scripts/scale.sh 8"
+.\tools\run.ps1 -Script "./runner.sh start 4"
+.\tools\run.ps1 -Script "./runner.sh status"
 ```
-
-**CMD:**
-
-```cmd
-tools\run.cmd
-```
-
-Der Tools-Container stellt eine Linux-Umgebung bereit, in der alle Scripts ausgeführt werden können.
 
 ## Maintenance
 
 ### View Logs
 
 ```bash
-# All services
-docker compose logs -f
-
-# Runner only
-docker compose logs -f agent
-
-# DinD only
-docker compose logs -f docker-in-docker
+./runner.sh logs           # Alle Services
+./runner.sh logs agent     # Nur Runner
 ```
 
 ### Cleanup
 
-**Linux/macOS:**
-
 ```bash
-# Basic cleanup (remove work directories)
-./scripts/cleanup.sh
-
-# Full cleanup (including volumes and images)
-./scripts/cleanup.sh --full
-```
-
-**Windows (via Tools Container):**
-
-```powershell
-# Basic cleanup
-.\tools\run.ps1 -Script "./scripts/cleanup.sh"
-
-# Full cleanup
-.\tools\run.ps1 -Script "./scripts/cleanup.sh --full"
+./runner.sh cleanup        # Basis-Cleanup
+./runner.sh cleanup --full # Vollständiger Cleanup
 ```
 
 ### Update Runner Image
@@ -1076,7 +923,7 @@ The host Docker socket is **never** mounted into containers.
 
 ```bash
 # Clean up old images and containers
-./scripts/cleanup.sh --full
+./runner.sh cleanup --full
 
 # Or manually inside DinD
 docker compose exec docker-in-docker docker system prune -af
@@ -1104,17 +951,15 @@ GitHubRunner/
 │   ├── dependabot.yml
 │   └── CODEOWNERS
 ├── scripts/
-│   ├── setup-env.sh
-│   ├── start.sh
-│   ├── stop.sh
-│   ├── status.sh
-│   ├── scale.sh
-│   └── cleanup.sh
+│   ├── setup-env.sh          # Interaktive .env Konfiguration
+│   ├── create-github-app.sh  # GitHub App erstellen (Wrapper)
+│   └── setup-github-app.py   # Automatisiertes GitHub App Setup
 ├── tools/
 │   ├── Dockerfile
 │   ├── run.sh
 │   ├── run.ps1
 │   └── run.cmd
+├── runner.sh                  # Unified Management Tool
 ├── docker-compose.yml
 ├── .env.example
 ├── .gitignore

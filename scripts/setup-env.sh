@@ -118,6 +118,10 @@ stack_name=${stack_name:-github-runner}
 echo ""
 echo -e "${BLUE}Updating .env file...${NC}"
 
+# Make scripts executable
+chmod +x "$PROJECT_ROOT/runner.sh" 2>/dev/null || true
+chmod +x "$PROJECT_ROOT/scripts/"*.sh 2>/dev/null || true
+
 # Use sed to update values (cross-platform compatible)
 if [[ "$OSTYPE" == "darwin"* ]]; then
     # macOS
@@ -158,14 +162,11 @@ echo "Next steps:"
 echo "  1. Review and adjust settings in .env if needed"
 echo "  2. Start the runner:"
 echo ""
-echo "     # Single runner:"
-echo "     docker compose up -d"
-echo ""
-echo "     # Multiple runners (4 parallel):"
-echo "     docker compose up -d --scale agent=4"
+echo "     ./runner.sh start       # Single runner"
+echo "     ./runner.sh start 4     # 4 parallel runners"
 echo ""
 echo "  3. Check runner status:"
-echo "     docker compose logs -f agent"
+echo "     ./runner.sh status"
 echo ""
 echo "  4. Verify in GitHub:"
 if [ -n "$org_name" ]; then

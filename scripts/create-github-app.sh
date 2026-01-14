@@ -3,8 +3,8 @@
 # GitHub Runner - Create GitHub App Script
 # =============================================================================
 # Creates a GitHub App with the correct permissions for self-hosted runners
-# Uses the GitHub App Manifest Flow
-# Usage: ./scripts/create-github-app.sh
+# Uses either the automated Python tool or manual instructions
+# Usage: ./scripts/create-github-app.sh [--manual]
 # =============================================================================
 
 set -e
@@ -21,16 +21,66 @@ NC='\033[0m'
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
+# Make scripts executable
+chmod +x "$PROJECT_ROOT/runner.sh" 2>/dev/null || true
+chmod +x "$SCRIPT_DIR"/*.sh 2>/dev/null || true
+chmod +x "$SCRIPT_DIR"/*.py 2>/dev/null || true
+
+# Check for --manual flag
+if [[ "$1" == "--manual" ]] || [[ "$1" == "-m" ]]; then
+    MANUAL_MODE=true
+else
+    MANUAL_MODE=false
+fi
+
+# Check if Python 3 is available
+PYTHON_CMD=""
+if command -v python3 &> /dev/null; then
+    PYTHON_CMD="python3"
+elif command -v python &> /dev/null; then
+    # Check if it's Python 3
+    if python --version 2>&1 | grep -q "Python 3"; then
+        PYTHON_CMD="python"
+    fi
+fi
+
+# If Python 3 is available and not manual mode, use the automated tool
+if [[ -n "$PYTHON_CMD" ]] && [[ "$MANUAL_MODE" == "false" ]]; then
+    echo -e "${BLUE}"
+    echo "============================================================================="
+    echo "  GitHub App Creator - Automated Setup"
+    echo "============================================================================="
+    echo -e "${NC}"
+    echo ""
+    echo -e "${GREEN}Using automated Python tool for GitHub App creation.${NC}"
+    echo "This will:"
+    echo "  1. Open your browser to create the app"
+    echo "  2. Automatically receive the credentials"
+    echo "  3. Save the private key"
+    echo "  4. Configure .env"
+    echo ""
+    echo -e "${YELLOW}For manual instructions, run: $0 --manual${NC}"
+    echo ""
+
+    exec "$PYTHON_CMD" "$SCRIPT_DIR/setup-github-app.py"
+fi
+
+# Manual mode or no Python available
 echo -e "${BLUE}"
 echo "============================================================================="
-echo "  GitHub App Creator - Self-Hosted Runner"
+echo "  GitHub App Creator - Manual Setup"
 echo "============================================================================="
 echo -e "${NC}"
 
-# Get organization name
-echo "This script creates a GitHub App with minimal permissions for self-hosted runners."
+if [[ -z "$PYTHON_CMD" ]]; then
+    echo -e "${YELLOW}Note: Python 3 not found. Using manual setup.${NC}"
+    echo -e "${YELLOW}Install Python 3 for automated setup.${NC}"
+    echo ""
+fi
+
+echo "This guide helps you create a GitHub App with minimal permissions."
 echo ""
-echo -e "${YELLOW}Vorteile einer GitHub App gegenüber PAT:${NC}"
+echo -e "${CYAN}Vorteile einer GitHub App gegenüber PAT:${NC}"
 echo "  - Nur minimale Berechtigungen (nicht voller admin:org Zugriff)"
 echo "  - Automatische Token-Rotation"
 echo "  - Bessere Audit-Logs"
@@ -43,37 +93,11 @@ if [ -z "$ORG_NAME" ]; then
     exit 1
 fi
 
-# App name
-DEFAULT_APP_NAME="self-hosted-runner-${ORG_NAME}"
-read -p "App name [$DEFAULT_APP_NAME]: " APP_NAME
-APP_NAME=${APP_NAME:-$DEFAULT_APP_NAME}
-
-# Create manifest JSON
-MANIFEST=$(cat <<EOF
-{
-  "name": "${APP_NAME}",
-  "url": "https://github.com/${ORG_NAME}",
-  "hook_attributes": {
-    "active": false
-  },
-  "redirect_url": "https://github.com/${ORG_NAME}",
-  "public": false,
-  "default_permissions": {
-    "organization_self_hosted_runners": "write",
-    "administration": "write"
-  },
-  "default_events": []
-}
-EOF
-)
-
-echo ""
-echo -e "${BLUE}GitHub App Manifest:${NC}"
-echo "$MANIFEST" | jq . 2>/dev/null || echo "$MANIFEST"
+APP_NAME="self-hosted-runner-${ORG_NAME}"
 
 echo ""
 echo -e "${GREEN}=============================================================================${NC}"
-echo -e "${GREEN}  Nächste Schritte - Manuelle Erstellung in GitHub${NC}"
+echo -e "${GREEN}  Schritt 1: GitHub App erstellen${NC}"
 echo -e "${GREEN}=============================================================================${NC}"
 echo ""
 echo "1. Öffne: https://github.com/organizations/${ORG_NAME}/settings/apps/new"
@@ -96,166 +120,99 @@ echo "   - App ID notieren (oben auf der App-Seite)"
 echo "   - 'Generate a private key' klicken und .pem Datei speichern"
 echo "   - App installieren: 'Install App' → Organisation auswählen"
 echo ""
-echo -e "${YELLOW}=============================================================================${NC}"
-echo -e "${YELLOW}  Alternativ: Manifest-basierte Erstellung (Automatisch)${NC}"
-echo -e "${YELLOW}=============================================================================${NC}"
-echo ""
-echo "Öffne diese URL um die App mit dem Manifest zu erstellen:"
-echo ""
 
-# URL-encode the manifest
-ENCODED_MANIFEST=$(echo "$MANIFEST" | jq -c . | python3 -c "import sys, urllib.parse; print(urllib.parse.quote(sys.stdin.read()))" 2>/dev/null || echo "$MANIFEST")
+read -p "Drücke Enter wenn die App erstellt wurde..."
 
-echo "https://github.com/organizations/${ORG_NAME}/settings/apps/new?manifest=${ENCODED_MANIFEST}"
 echo ""
 echo -e "${BLUE}=============================================================================${NC}"
-echo -e "${BLUE}  Nach App-Erstellung - .env konfigurieren${NC}"
+echo -e "${BLUE}  Schritt 2: .env konfigurieren${NC}"
 echo -e "${BLUE}=============================================================================${NC}"
 echo ""
-echo "Füge folgende Werte in deine .env ein:"
-echo ""
-echo "  # GitHub App Authentication"
-echo "  APP_ID=<App ID von der GitHub App Seite>"
-echo "  APP_LOGIN=${ORG_NAME}"
-echo "  APP_PRIVATE_KEY=/path/to/private-key.pem"
-echo ""
-echo "  # Deaktiviere PAT wenn App verwendet wird"
-echo "  # GITHUB_ACCESS_TOKEN=..."
-echo ""
 
-# Save manifest to file
-MANIFEST_FILE="$PROJECT_ROOT/github-app-manifest.json"
-echo "$MANIFEST" > "$MANIFEST_FILE"
-echo -e "${GREEN}Manifest gespeichert: $MANIFEST_FILE${NC}"
-echo ""
+ENV_FILE="$PROJECT_ROOT/.env"
 
-# =============================================================================
-# Interactive .env Configuration
-# =============================================================================
-echo ""
-read -p "Möchtest du die .env jetzt konfigurieren? (j/n) [n]: " CONFIGURE_ENV
-CONFIGURE_ENV=${CONFIGURE_ENV:-n}
-
-if [[ "$CONFIGURE_ENV" =~ ^[jJyY]$ ]]; then
-    ENV_FILE="$PROJECT_ROOT/.env"
-
-    # Check if .env exists
-    if [ ! -f "$ENV_FILE" ]; then
-        if [ -f "$PROJECT_ROOT/.env.example" ]; then
-            echo -e "${YELLOW}Keine .env gefunden. Kopiere .env.example...${NC}"
-            cp "$PROJECT_ROOT/.env.example" "$ENV_FILE"
-        else
-            echo -e "${RED}Fehler: Keine .env oder .env.example gefunden!${NC}"
-            exit 1
-        fi
-    fi
-
-    echo ""
-    echo -e "${BLUE}=============================================================================${NC}"
-    echo -e "${BLUE}  .env Konfiguration${NC}"
-    echo -e "${BLUE}=============================================================================${NC}"
-    echo ""
-
-    # Get App ID
-    read -p "GitHub App ID (Zahl von der App-Seite): " APP_ID
-    if [ -z "$APP_ID" ]; then
-        echo -e "${RED}Fehler: App ID ist erforderlich!${NC}"
+# Check if .env exists
+if [ ! -f "$ENV_FILE" ]; then
+    if [ -f "$PROJECT_ROOT/.env.example" ]; then
+        echo -e "${YELLOW}Keine .env gefunden. Kopiere .env.example...${NC}"
+        cp "$PROJECT_ROOT/.env.example" "$ENV_FILE"
+    else
+        echo -e "${RED}Fehler: Keine .env oder .env.example gefunden!${NC}"
         exit 1
     fi
-
-    # Validate App ID is numeric
-    if ! [[ "$APP_ID" =~ ^[0-9]+$ ]]; then
-        echo -e "${RED}Fehler: App ID muss eine Zahl sein!${NC}"
-        exit 1
-    fi
-
-    # Get Private Key path
-    echo ""
-    echo "Wo hast du die Private Key Datei (.pem) gespeichert?"
-    echo "  Beispiel: /opt/CI-GitHubRunner/github-app.pem"
-    echo "  Beispiel: ./github-app.pem (relativ zum Projektverzeichnis)"
-    read -p "Pfad zur Private Key Datei: " PRIVATE_KEY_PATH
-
-    if [ -z "$PRIVATE_KEY_PATH" ]; then
-        echo -e "${RED}Fehler: Private Key Pfad ist erforderlich!${NC}"
-        exit 1
-    fi
-
-    # Convert relative path to absolute if needed
-    if [[ ! "$PRIVATE_KEY_PATH" = /* ]]; then
-        PRIVATE_KEY_PATH="$PROJECT_ROOT/$PRIVATE_KEY_PATH"
-    fi
-
-    # Check if key file exists
-    if [ ! -f "$PRIVATE_KEY_PATH" ]; then
-        echo -e "${YELLOW}Warnung: Datei $PRIVATE_KEY_PATH existiert noch nicht.${NC}"
-        echo "Stelle sicher, dass du die .pem Datei dort speicherst!"
-    fi
-
-    echo ""
-    echo -e "${CYAN}Aktualisiere .env...${NC}"
-
-    # Update or add APP_ID
-    if grep -q "^APP_ID=" "$ENV_FILE"; then
-        sed -i "s|^APP_ID=.*|APP_ID=$APP_ID|" "$ENV_FILE"
-    elif grep -q "^# APP_ID=" "$ENV_FILE"; then
-        sed -i "s|^# APP_ID=.*|APP_ID=$APP_ID|" "$ENV_FILE"
-    else
-        echo "" >> "$ENV_FILE"
-        echo "# GitHub App Authentication" >> "$ENV_FILE"
-        echo "APP_ID=$APP_ID" >> "$ENV_FILE"
-    fi
-
-    # Update or add APP_LOGIN
-    if grep -q "^APP_LOGIN=" "$ENV_FILE"; then
-        sed -i "s|^APP_LOGIN=.*|APP_LOGIN=$ORG_NAME|" "$ENV_FILE"
-    elif grep -q "^# APP_LOGIN=" "$ENV_FILE"; then
-        sed -i "s|^# APP_LOGIN=.*|APP_LOGIN=$ORG_NAME|" "$ENV_FILE"
-    else
-        echo "APP_LOGIN=$ORG_NAME" >> "$ENV_FILE"
-    fi
-
-    # Update or add APP_PRIVATE_KEY
-    if grep -q "^APP_PRIVATE_KEY=" "$ENV_FILE"; then
-        sed -i "s|^APP_PRIVATE_KEY=.*|APP_PRIVATE_KEY=$PRIVATE_KEY_PATH|" "$ENV_FILE"
-    elif grep -q "^# APP_PRIVATE_KEY=" "$ENV_FILE"; then
-        sed -i "s|^# APP_PRIVATE_KEY=.*|APP_PRIVATE_KEY=$PRIVATE_KEY_PATH|" "$ENV_FILE"
-    else
-        echo "APP_PRIVATE_KEY=$PRIVATE_KEY_PATH" >> "$ENV_FILE"
-    fi
-
-    # Comment out GITHUB_ACCESS_TOKEN if not already commented
-    if grep -q "^GITHUB_ACCESS_TOKEN=" "$ENV_FILE"; then
-        echo -e "${YELLOW}Kommentiere GITHUB_ACCESS_TOKEN aus (GitHub App wird verwendet)...${NC}"
-        sed -i "s|^GITHUB_ACCESS_TOKEN=|# GITHUB_ACCESS_TOKEN=|" "$ENV_FILE"
-    fi
-
-    # Ensure RUNNER_SCOPE is set to org
-    if grep -q "^RUNNER_SCOPE=" "$ENV_FILE"; then
-        sed -i "s|^RUNNER_SCOPE=.*|RUNNER_SCOPE=org|" "$ENV_FILE"
-    fi
-
-    # Ensure ORG_NAME is set
-    if grep -q "^ORG_NAME=" "$ENV_FILE"; then
-        sed -i "s|^ORG_NAME=.*|ORG_NAME=$ORG_NAME|" "$ENV_FILE"
-    fi
-
-    echo ""
-    echo -e "${GREEN}=============================================================================${NC}"
-    echo -e "${GREEN}  .env erfolgreich konfiguriert!${NC}"
-    echo -e "${GREEN}=============================================================================${NC}"
-    echo ""
-    echo "Konfigurierte Werte:"
-    echo "  APP_ID=$APP_ID"
-    echo "  APP_LOGIN=$ORG_NAME"
-    echo "  APP_PRIVATE_KEY=$PRIVATE_KEY_PATH"
-    echo "  RUNNER_SCOPE=org"
-    echo "  ORG_NAME=$ORG_NAME"
-    echo ""
-    echo -e "${YELLOW}Wichtig: Vergiss nicht, die GitHub App in der Organisation zu installieren!${NC}"
-    echo "  https://github.com/organizations/${ORG_NAME}/settings/apps"
-    echo "  → App auswählen → 'Install App' → Organisation wählen"
-    echo ""
 fi
 
-echo -e "${GREEN}Fertig!${NC}"
+# Get App ID
+read -p "GitHub App ID (Zahl von der App-Seite): " APP_ID
+if [ -z "$APP_ID" ]; then
+    echo -e "${RED}Fehler: App ID ist erforderlich!${NC}"
+    exit 1
+fi
+
+# Validate App ID is numeric
+if ! [[ "$APP_ID" =~ ^[0-9]+$ ]]; then
+    echo -e "${RED}Fehler: App ID muss eine Zahl sein!${NC}"
+    exit 1
+fi
+
+# Get Private Key path
+echo ""
+echo "Wo hast du die Private Key Datei (.pem) gespeichert?"
+echo "  Beispiel: ./github-app.pem (im Projektverzeichnis)"
+read -p "Pfad zur Private Key Datei: " PRIVATE_KEY_PATH
+
+if [ -z "$PRIVATE_KEY_PATH" ]; then
+    echo -e "${RED}Fehler: Private Key Pfad ist erforderlich!${NC}"
+    exit 1
+fi
+
+# Convert relative path to absolute if needed
+if [[ ! "$PRIVATE_KEY_PATH" = /* ]]; then
+    PRIVATE_KEY_PATH="$PROJECT_ROOT/$PRIVATE_KEY_PATH"
+fi
+
+echo ""
+echo -e "${CYAN}Aktualisiere .env...${NC}"
+
+# Update .env file using sed
+update_env() {
+    local key=$1
+    local value=$2
+    if grep -q "^${key}=" "$ENV_FILE"; then
+        sed -i "s|^${key}=.*|${key}=${value}|" "$ENV_FILE"
+    elif grep -q "^# ${key}=" "$ENV_FILE"; then
+        sed -i "s|^# ${key}=.*|${key}=${value}|" "$ENV_FILE"
+    else
+        echo "${key}=${value}" >> "$ENV_FILE"
+    fi
+}
+
+update_env "APP_ID" "$APP_ID"
+update_env "APP_LOGIN" "$ORG_NAME"
+update_env "APP_PRIVATE_KEY" "$PRIVATE_KEY_PATH"
+update_env "RUNNER_SCOPE" "org"
+update_env "ORG_NAME" "$ORG_NAME"
+
+# Comment out GITHUB_ACCESS_TOKEN
+if grep -q "^GITHUB_ACCESS_TOKEN=" "$ENV_FILE"; then
+    echo -e "${YELLOW}Kommentiere GITHUB_ACCESS_TOKEN aus...${NC}"
+    sed -i "s|^GITHUB_ACCESS_TOKEN=|# GITHUB_ACCESS_TOKEN=|" "$ENV_FILE"
+fi
+
+echo ""
+echo -e "${GREEN}=============================================================================${NC}"
+echo -e "${GREEN}  Setup Complete!${NC}"
+echo -e "${GREEN}=============================================================================${NC}"
+echo ""
+echo "Konfigurierte Werte:"
+echo "  APP_ID=$APP_ID"
+echo "  APP_LOGIN=$ORG_NAME"
+echo "  APP_PRIVATE_KEY=$PRIVATE_KEY_PATH"
+echo ""
+echo -e "${YELLOW}Wichtig: Vergiss nicht, die GitHub App in der Organisation zu installieren!${NC}"
+echo "  https://github.com/organizations/${ORG_NAME}/settings/apps"
+echo ""
+echo "Nächste Schritte:"
+echo "  ./runner.sh start       - Runner starten"
+echo "  ./runner.sh status      - Status prüfen"
+echo ""

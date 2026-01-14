@@ -65,15 +65,18 @@ Write-Host "===========================================" -ForegroundColor Green
 Write-Host " GitHub Runner - Development Tools" -ForegroundColor Green
 Write-Host "===========================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "Available scripts:"
-Write-Host "  ./scripts/deploy.sh            - Deploy/update on host" -ForegroundColor Yellow
-Write-Host "  ./scripts/setup-env.sh         - Interactive environment setup" -ForegroundColor Yellow
-Write-Host "  ./scripts/create-github-app.sh - Create GitHub App (recommended)" -ForegroundColor Yellow
-Write-Host "  ./scripts/start.sh [N]         - Start N runners (default: 1)" -ForegroundColor Yellow
-Write-Host "  ./scripts/stop.sh              - Stop all runners" -ForegroundColor Yellow
-Write-Host "  ./scripts/status.sh            - Show status and resources" -ForegroundColor Yellow
-Write-Host "  ./scripts/scale.sh N           - Scale to N runners" -ForegroundColor Yellow
-Write-Host "  ./scripts/cleanup.sh           - Cleanup Docker resources" -ForegroundColor Yellow
+Write-Host "Runner Management (./runner.sh):"
+Write-Host "  ./runner.sh start [N]     - Start N runners (default: 1)" -ForegroundColor Yellow
+Write-Host "  ./runner.sh stop          - Stop all runners" -ForegroundColor Yellow
+Write-Host "  ./runner.sh status        - Show status and resources" -ForegroundColor Yellow
+Write-Host "  ./runner.sh scale N       - Scale to N runners" -ForegroundColor Yellow
+Write-Host "  ./runner.sh logs          - View logs" -ForegroundColor Yellow
+Write-Host "  ./runner.sh cleanup       - Cleanup Docker resources" -ForegroundColor Yellow
+Write-Host "  ./runner.sh deploy        - Deploy/update from git" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "Setup Scripts:"
+Write-Host "  ./scripts/setup-env.sh         - Interactive environment setup" -ForegroundColor Cyan
+Write-Host "  ./scripts/create-github-app.sh - Create GitHub App (recommended)" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Type 'exit' to leave the container."
 Write-Host "===========================================" -ForegroundColor Green

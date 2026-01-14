@@ -52,15 +52,18 @@ echo ===========================================
 echo  GitHub Runner - Development Tools
 echo ===========================================
 echo.
-echo Available scripts:
-echo   ./scripts/deploy.sh            - Deploy/update on host
+echo Runner Management (./runner.sh):
+echo   ./runner.sh start [N]     - Start N runners (default: 1)
+echo   ./runner.sh stop          - Stop all runners
+echo   ./runner.sh status        - Show status and resources
+echo   ./runner.sh scale N       - Scale to N runners
+echo   ./runner.sh logs          - View logs
+echo   ./runner.sh cleanup       - Cleanup Docker resources
+echo   ./runner.sh deploy        - Deploy/update from git
+echo.
+echo Setup Scripts:
 echo   ./scripts/setup-env.sh         - Interactive environment setup
 echo   ./scripts/create-github-app.sh - Create GitHub App (recommended)
-echo   ./scripts/start.sh [N]         - Start N runners (default: 1)
-echo   ./scripts/stop.sh              - Stop all runners
-echo   ./scripts/status.sh            - Show status and resources
-echo   ./scripts/scale.sh N           - Scale to N runners
-echo   ./scripts/cleanup.sh           - Cleanup Docker resources
 echo.
 echo Type 'exit' to leave the container.
 echo ===========================================
