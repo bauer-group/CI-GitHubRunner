@@ -387,12 +387,13 @@ Check that your runner appears in the group:
 
 ### Resource Limits
 
+Only DinD needs resource limits - all Docker builds run there. Runner agents are lightweight (~200MB RAM).
+
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `DIND_MEMORY_LIMIT` | `32g` | DinD container memory |
-| `DIND_CPU_LIMIT` | `16` | DinD container CPUs |
-| `RUNNER_MEMORY_LIMIT` | `32g` | Runner container memory |
-| `RUNNER_CPU_LIMIT` | `16` | Runner container CPUs |
+| `DIND_MEMORY_LIMIT` | `56g` | DinD container memory (all builds here!) |
+| `DIND_CPU_LIMIT` | `28` | DinD container CPUs |
+| `DIND_SHM_SIZE` | `8g` | Shared memory for large builds |
 
 ## Usage in Workflows
 

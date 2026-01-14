@@ -101,11 +101,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 5s
-    deploy:
-      resources:
-        limits:
-          cpus: "${RUNNER_CPU_LIMIT:-16}"
-          memory: ${RUNNER_MEMORY_LIMIT:-32g}
+    # No resource limits - Runner agent is lightweight, all work happens in DinD
     logging:
       driver: json-file
       options:
