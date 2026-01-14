@@ -1,3 +1,15 @@
+# [0.3.0](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.2.0...v0.3.0) (2026-01-14)
+
+
+### Bug Fixes
+
+* Entferne veraltete Skripte zur Verwaltung des GitHub Runners ([09f57ca](https://github.com/bauer-group/CI-GitHubRunner/commit/09f57ca6ed6670d14861bc3c50a3b02ed962e2ab))
+
+
+### Features
+
+* Introduce unified runner management script and enhance setup process ([31b3b5e](https://github.com/bauer-group/CI-GitHubRunner/commit/31b3b5e67c5bf2103649ed5fc345c343212210ae))
+
 # [0.2.0](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.1.3...v0.2.0) (2026-01-13)
 
 
