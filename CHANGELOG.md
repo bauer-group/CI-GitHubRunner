@@ -1,3 +1,11 @@
+## [0.3.7](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.3.6...v0.3.7) (2026-01-14)
+
+
+### Bug Fixes
+
+* Aktualisiere den App-Namen und die Beschreibung für die GitHub App-Generierung ([82c1e41](https://github.com/bauer-group/CI-GitHubRunner/commit/82c1e41edd1ca2bf439b89100cbf5c2f4102c6c7))
+* Aktualisiere die URL des GitHub-Repositories in der Konfiguration und verbessere die App-Beschreibung ([ca0f7db](https://github.com/bauer-group/CI-GitHubRunner/commit/ca0f7db9d4e3a94cf1f2caac9907c271a10f6e49))
+
 ## [0.3.6](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.3.5...v0.3.6) (2026-01-14)
 
 
