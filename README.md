@@ -136,12 +136,12 @@ Das Script:
 
 APP_ID=123456
 APP_LOGIN=your-org-name
-APP_PRIVATE_KEY=/path/to/private-key.pem
+APP_PRIVATE_KEY=./github-app.pem
 RUNNER_SCOPE=org
 ORG_NAME=your-org-name
 ```
 
-Place the private key file (e.g., `github-app.pem`) in the project root, or provide an absolute path.
+**Hinweis:** `APP_PRIVATE_KEY` ist der Host-Pfad zur PEM-Datei (relativ zum Compose-Verzeichnis). Das `runner.sh` Script erkennt automatisch GitHub App Auth und mountet die Datei nach `/opt/github-app.pem` im Container.
 
 ### Step 2: Prepare the Server
 
@@ -975,7 +975,8 @@ GitHubRunner/
 │   ├── run.ps1
 │   └── run.cmd
 ├── runner.sh                  # Unified Management Tool
-├── docker-compose.yml
+├── docker-compose.yml         # Base Docker Compose config
+├── docker-compose.app-auth.yml # GitHub App auth override (auto-detected)
 ├── .env.example
 ├── .gitignore
 ├── README.md

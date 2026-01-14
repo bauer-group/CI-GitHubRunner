@@ -65,15 +65,18 @@ get_compose_cmd() {
     # Check if GitHub App auth is configured
     if [ -f "$PROJECT_ROOT/.env" ]; then
         local app_id=$(grep "^APP_ID=" "$PROJECT_ROOT/.env" 2>/dev/null | cut -d'=' -f2)
-        local pem_file=$(grep "^APP_PRIVATE_KEY_FILE=" "$PROJECT_ROOT/.env" 2>/dev/null | cut -d'=' -f2)
-
-        # Default pem file location
-        pem_file="${pem_file:-./github-app.pem}"
+        local pem_file=$(grep "^APP_PRIVATE_KEY=" "$PROJECT_ROOT/.env" 2>/dev/null | cut -d'=' -f2)
 
         # If APP_ID is set and PEM file exists, use app-auth override
-        if [ -n "$app_id" ] && [ -f "$PROJECT_ROOT/$pem_file" ]; then
-            echo "docker compose -f docker-compose.yml -f docker-compose.app-auth.yml"
-            return
+        if [ -n "$app_id" ] && [ -n "$pem_file" ]; then
+            # Handle relative paths (./github-app.pem) and absolute paths
+            local pem_path="$pem_file"
+            [[ "$pem_file" == ./* ]] && pem_path="$PROJECT_ROOT/${pem_file:2}"
+
+            if [ -f "$pem_path" ]; then
+                echo "docker compose -f docker-compose.yml -f docker-compose.app-auth.yml"
+                return
+            fi
         fi
     fi
 
