@@ -1,3 +1,10 @@
+## [0.3.10](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.3.9...v0.3.10) (2026-01-14)
+
+
+### Bug Fixes
+
+* Aktualisiere Umgebungsvariablen und Hinweise zur GitHub App Authentifizierung in .env, README und Docker-Compose-Dateien ([6e1554e](https://github.com/bauer-group/CI-GitHubRunner/commit/6e1554ec1b9dc430d23fb353b58788e1d7455142))
+
 ## [0.3.9](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.3.8...v0.3.9) (2026-01-14)
 
 
