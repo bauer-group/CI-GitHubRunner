@@ -91,8 +91,12 @@ This solution provides ephemeral GitHub Actions runners that:
 3. Select **Resource owner**: Your organization
 4. Select **Repository access**: All repositories (or specific ones)
 5. Set **Permissions**:
-   - Repository permissions: `Administration: Read and write`
-   - Organization permissions: `Self-hosted runners: Read and write`
+
+   | Runner Scope | Required Permissions |
+   |--------------|---------------------|
+   | Organization | Organization: `Self-hosted runners: Read and write` |
+   | Repository   | Repository: `Administration: Read and write` |
+
 6. Generate and copy the token
 
 #### Option C: GitHub App (Recommended for Production)
@@ -120,9 +124,15 @@ The script:
    - **Name**: `Self-Hosted Runner - {Environment}`
    - **Homepage URL**: Your organization URL
    - **Webhook**: Uncheck "Active" (not needed)
-4. Set **Permissions**:
-   - Repository permissions: `Administration: Read and write`
-   - Organization permissions: `Self-hosted runners: Read and write`
+4. Set **Permissions** (based on runner scope):
+
+   | Runner Scope | Required Permissions |
+   |--------------|---------------------|
+   | Organization | Organization: `Self-hosted runners: Read and write` |
+   | Repository   | Repository: `Administration: Read and write` |
+
+   > **Note:** For organization runners, no repository access is needed!
+
 5. Click **"Create GitHub App"**
 6. Note the **App ID** from the app settings page
 7. Generate and download a **Private Key** (.pem file)
