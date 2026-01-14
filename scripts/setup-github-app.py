@@ -92,9 +92,9 @@ class GitHubAppSetup:
 
         # Build app name with optional instance identifier
         if instance_name:
-            self.app_name = f"runner-{instance_name}-{org_name}"
+            self.app_name = f"Self-Hosted Runner - {instance_name}"
         else:
-            self.app_name = f"self-hosted-runner-{org_name}"
+            self.app_name = f"Self-Hosted Runner - {org_name}"
 
         self.callback_url = f"http://localhost:{PORT}{CALLBACK_PATH}"
         self.received_code = None
@@ -105,16 +105,24 @@ class GitHubAppSetup:
         """Generate the GitHub App manifest"""
         # Build description with optional instance name
         if self.instance_name:
-            description = f"Self-hosted Runner ({self.instance_name}) for {self.org_name}. Docker-in-Docker isolated runners."
+            description = (
+                f"Self-hosted GitHub Actions Runner ({self.instance_name}) for {self.org_name}. "
+                f"Ephemeral runners with Docker-in-Docker isolation for secure CI/CD builds. "
+                f"https://github.com/{self.org_name}/GitHubRunner"
+            )
         else:
-            description = f"Self-hosted GitHub Actions Runner for {self.org_name}. Docker-in-Docker isolated runners."
+            description = (
+                f"Self-hosted GitHub Actions Runner for {self.org_name}. "
+                f"Ephemeral runners with Docker-in-Docker isolation for secure CI/CD builds. "
+                f"https://github.com/{self.org_name}/GitHubRunner"
+            )
 
         return {
             "name": self.app_name,
             "description": description,
-            "url": f"https://github.com/{self.org_name}",
+            "url": f"https://github.com/{self.org_name}/GitHubRunner",
             "hook_attributes": {
-                "url": f"https://github.com/{self.org_name}",
+                "url": f"https://github.com/{self.org_name}/GitHubRunner",
                 "active": False
             },
             "redirect_url": self.callback_url,
@@ -217,13 +225,14 @@ class GitHubAppSetup:
                     if code:
                         app_setup.received_code = code
                         self.send_response(200)
-                        self.send_header('Content-type', 'text/html')
+                        self.send_header('Content-type', 'text/html; charset=utf-8')
                         self.end_headers()
 
                         html = """
                         <!DOCTYPE html>
                         <html>
                         <head>
+                            <meta charset="UTF-8">
                             <title>GitHub App Created!</title>
                             <style>
                                 body {
@@ -551,9 +560,9 @@ def main():
 
     # Build app name for confirmation
     if instance_name:
-        app_name = f"runner-{instance_name}-{org_name}"
+        app_name = f"Self-Hosted Runner - {instance_name}"
     else:
-        app_name = f"self-hosted-runner-{org_name}"
+        app_name = f"Self-Hosted Runner - {org_name}"
 
     # Confirm
     print(f"This will create a GitHub App named: {Colors.CYAN}{app_name}{Colors.NC}")
