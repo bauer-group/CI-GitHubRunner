@@ -1,3 +1,10 @@
+## [0.3.5](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.3.4...v0.3.5) (2026-01-14)
+
+
+### Bug Fixes
+
+* Aktualisiere das Styling und die Manifest-Generierung im GitHub App-Setup ([95524d6](https://github.com/bauer-group/CI-GitHubRunner/commit/95524d66733e2984490ed363b1277b91f03966a8))
+
 ## [0.3.4](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.3.3...v0.3.4) (2026-01-14)
 
 
