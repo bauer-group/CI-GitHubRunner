@@ -14,7 +14,7 @@ This solution provides ephemeral GitHub Actions runners that:
 
 ## Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                        Host System                          │
 │                                                             │
@@ -57,12 +57,12 @@ This solution provides ephemeral GitHub Actions runners that:
 
 #### Option A: Personal Access Token (Classic) - Recommended for Quick Setup
 
-**Schnellstart mit vorausgewählten Scopes:**
+**Quick start with pre-selected scopes:**
 
-- **Organization Runner:** [Token erstellen (repo + admin:org)](https://github.com/settings/tokens/new?scopes=repo,admin:org&description=Self-Hosted-Runner)
-- **Repository Runner:** [Token erstellen (repo)](https://github.com/settings/tokens/new?scopes=repo&description=Self-Hosted-Runner)
+- **Organization Runner:** [Create token (repo + admin:org)](https://github.com/settings/tokens/new?scopes=repo,admin:org&description=Self-Hosted-Runner)
+- **Repository Runner:** [Create token (repo)](https://github.com/settings/tokens/new?scopes=repo&description=Self-Hosted-Runner)
 
-**Oder manuell:**
+**Or manually:**
 
 1. Go to [GitHub Settings → Tokens (classic)](https://github.com/settings/tokens)
 2. Click **"Generate new token (classic)"**
@@ -76,13 +76,13 @@ This solution provides ephemeral GitHub Actions runners that:
 
 5. Click **"Generate token"** and copy immediately
 
-> **Hinweis zu `admin:org`:** Dieser Scope gewährt vollen Administrationszugriff auf die gesamte Organisation (nicht nur Runner). Dazu gehören:
+> **Note on `admin:org`:** This scope grants full administrative access to the entire organization (not just runners). This includes:
 >
-> - Runner und Runner-Gruppen verwalten
-> - Webhooks, Teams, Mitglieder verwalten
-> - Org-Einstellungen ändern
+> - Managing runners and runner groups
+> - Managing webhooks, teams, members
+> - Changing organization settings
 >
-> Für erhöhte Sicherheit empfehlen wir **Option C: GitHub App** - diese hat nur die minimal notwendigen Berechtigungen.
+> For enhanced security, we recommend **Option C: GitHub App** - it has only the minimum required permissions.
 
 #### Option B: Fine-grained Personal Access Token (More Secure)
 
@@ -99,20 +99,20 @@ This solution provides ephemeral GitHub Actions runners that:
 
 GitHub Apps provide better security with automatic token rotation and fine-grained permissions.
 
-**Schnellstart mit Helper-Script:**
+**Quick start with helper script:**
 
 ```bash
-# Interaktives Script für GitHub App Erstellung
+# Interactive script for GitHub App creation
 ./scripts/create-github-app.sh
 ```
 
-Das Script:
+The script:
 
-1. Erstellt das App-Manifest mit korrekten Berechtigungen
-2. Generiert die URL für die Manifest-basierte App-Erstellung
-3. Konfiguriert automatisch die `.env` Datei (optional)
+1. Creates the app manifest with correct permissions
+2. Generates the URL for manifest-based app creation
+3. Automatically configures the `.env` file (optional)
 
-**Oder manuell:**
+**Or manually:**
 
 1. Go to `https://github.com/organizations/{org}/settings/apps`
 2. Click **"New GitHub App"**
@@ -141,7 +141,7 @@ RUNNER_SCOPE=org
 ORG_NAME=your-org-name
 ```
 
-**Hinweis:** `APP_PRIVATE_KEY` ist der Host-Pfad zur PEM-Datei. Das Setup-Script schreibt den absoluten Pfad (sicherer). Relative Pfade (`./github-app.pem`) funktionieren auch. Das `runner.sh` Script erkennt automatisch GitHub App Auth und mountet die Datei nach `/opt/github-app.pem` im Container.
+**Note:** `APP_PRIVATE_KEY` is the host path to the PEM file. The setup script writes the absolute path (more secure). Relative paths (`./github-app.pem`) also work. The `runner.sh` script automatically detects GitHub App auth and mounts the file to `/opt/github-app.pem` in the container.
 
 ### Step 2: Prepare the Server
 
@@ -290,18 +290,18 @@ Configure your runner to be available for **all repositories** in your organizat
 
 ### Runner Group Configuration
 
-> **Wichtig:** Die Runner Group muss **vor** dem Start der Runner in GitHub existieren!
-> Die Gruppe "Default" ist immer vorhanden. Eigene Gruppen müssen manuell erstellt werden.
+> **Important:** The runner group must exist in GitHub **before** starting the runners!
+> The "Default" group always exists. Custom groups must be created manually.
 
-**Runner Group erstellen (falls nicht vorhanden):**
+**Create runner group (if not exists):**
 
 1. Go to `https://github.com/organizations/bauer-group/settings/actions/runner-groups`
 2. Click **"New runner group"**
-3. Name: z.B. `Self-Hosted (BAUER GROUP)`
+3. Name: e.g., `Self-Hosted (BAUER GROUP)`
 4. Configure repository access as needed
 5. Click **"Create group"**
 
-**Bestehende Gruppe konfigurieren:**
+**Configure existing group:**
 
 1. Go to `https://github.com/organizations/bauer-group/settings/actions/runner-groups`
 2. Find your runner group (e.g., **"Self-Hosted (BAUER GROUP)"**)
@@ -345,7 +345,7 @@ jobs:
       - run: echo "Running on self-hosted runner!"
 
   build-specific:
-    # Option 2: Runner Group + Labels (empfohlen für Orgs)
+    # Option 2: Runner Group + Labels (recommended for orgs)
     runs-on:
       group: Self-Hosted (BAUER GROUP)
       labels: [linux, docker]
@@ -376,24 +376,24 @@ Check that your runner appears in the group:
 
 ### Key Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `GITHUB_ACCESS_TOKEN` | PAT with admin scopes | **Required** |
-| `RUNNER_SCOPE` | `org` or `repo` | `org` |
-| `ORG_NAME` | Organization name (for `org` scope) | - |
-| `REPO_URL` | Repository URL (for `repo` scope) | - |
-| `RUNNER_GROUP` | Runner group name (must exist in GitHub) | `Default` |
-| `RUNNER_LABELS` | Additional labels (default: self-hosted, linux, x64) | `docker` |
+| Variable              | Description                                    | Default      |
+|-----------------------|------------------------------------------------|--------------|
+| `GITHUB_ACCESS_TOKEN` | PAT with admin scopes                          | **Required** |
+| `RUNNER_SCOPE`        | `org` or `repo`                                | `org`        |
+| `ORG_NAME`            | Organization name (for `org` scope)            | -            |
+| `REPO_URL`            | Repository URL (for `repo` scope)              | -            |
+| `RUNNER_GROUP`        | Runner group name (must exist in GitHub)       | `Default`    |
+| `RUNNER_LABELS`       | Additional labels (default: self-hosted, linux, x64) | `docker` |
 
 ### Resource Limits
 
 Only DinD needs resource limits - all Docker builds run there. Runner agents are lightweight (~200MB RAM).
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `DIND_MEMORY_LIMIT` | `56g` | DinD container memory (all builds here!) |
-| `DIND_CPU_LIMIT` | `28` | DinD container CPUs |
-| `DIND_SHM_SIZE` | `8g` | Shared memory for large builds |
+| Variable            | Default | Description                          |
+|---------------------|---------|--------------------------------------|
+| `DIND_MEMORY_LIMIT` | `56g`   | DinD container memory (all builds here!) |
+| `DIND_CPU_LIMIT`    | `28`    | DinD container CPUs                  |
+| `DIND_SHM_SIZE`     | `8g`    | Shared memory for large builds       |
 
 ## Usage in Workflows
 
@@ -412,7 +412,7 @@ jobs:
 
 ### Using Runner Groups
 
-Für bessere Kontrolle kann die Runner Group direkt im Workflow angegeben werden:
+For better control, you can specify the runner group directly in the workflow:
 
 ```yaml
 jobs:
@@ -425,21 +425,21 @@ jobs:
       - run: echo "Running on runner from specific group!"
 ```
 
-**Vorteile der Runner Group Angabe:**
+**Benefits of specifying runner group:**
 
-- Explizite Zuordnung zu einer bestimmten Runner-Gruppe
-- Verhindert versehentliche Ausführung auf falschen Runnern
-- Bessere Kontrolle in Orgs mit mehreren Runner-Gruppen
-- Labels können zusätzlich zur Gruppe gefiltert werden
+- Explicit assignment to a specific runner group
+- Prevents accidental execution on wrong runners
+- Better control in orgs with multiple runner groups
+- Labels can be additionally filtered within the group
 
-**Nur Group ohne Labels:**
+**Group only without labels:**
 
 ```yaml
 jobs:
   build:
     runs-on:
       group: Self-Hosted (BAUER GROUP)
-    # Verwendet jeden verfügbaren Runner aus der Gruppe
+    # Uses any available runner from the group
 ```
 
 ### Available Labels
@@ -564,9 +564,9 @@ jobs:
         run: docker build --build-arg NODE_VERSION=${{ matrix.node }} -t myapp:node${{ matrix.node }} .
 ```
 
-#### Fallback zu GitHub-Hosted Runners
+#### Fallback to GitHub-Hosted Runners
 
-Wenn Self-Hosted Runner nicht verfügbar sind, kann auf GitHub-Hosted Runner zurückgefallen werden:
+When self-hosted runners are unavailable, you can fall back to GitHub-hosted runners:
 
 ```yaml
 name: Build with Fallback
@@ -574,7 +574,7 @@ name: Build with Fallback
 on: [push, pull_request]
 
 jobs:
-  # Prüft ob Self-Hosted Runner verfügbar sind
+  # Check if self-hosted runners are available
   check-runners:
     runs-on: ubuntu-latest
     outputs:
@@ -583,13 +583,13 @@ jobs:
       - name: Check self-hosted runner availability
         id: check
         run: |
-          # Versuche Self-Hosted Runner zu erreichen (Timeout 10s)
-          # Diese Prüfung ist optional - alternativ einfach "true" setzen
+          # Try to reach self-hosted runner (timeout 10s)
+          # This check is optional - alternatively just set "true"
           echo "available=true" >> $GITHUB_OUTPUT
 
   build:
     needs: check-runners
-    # Dynamische Runner-Auswahl basierend auf Verfügbarkeit
+    # Dynamic runner selection based on availability
     runs-on: ${{ needs.check-runners.outputs.use-self-hosted == 'true' && fromJSON('["self-hosted", "linux", "docker"]') || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v4
@@ -605,11 +605,11 @@ jobs:
             docker build -t myapp:latest .
           else
             echo "Docker not available, using alternative build"
-            # Fallback build ohne Docker
+            # Fallback build without Docker
           fi
 ```
 
-**Einfachere Alternative mit Workflow Dispatch:**
+**Simpler alternative with workflow dispatch:**
 
 ```yaml
 name: Build (Selectable Runner)
@@ -634,7 +634,7 @@ jobs:
       - run: echo "Building on ${{ runner.name }}"
 ```
 
-**Hinweis:** GitHub Actions hat keinen eingebauten automatischen Fallback-Mechanismus. Die obigen Beispiele zeigen Workarounds für verschiedene Szenarien.
+**Note:** GitHub Actions has no built-in automatic fallback mechanism. The examples above show workarounds for various scenarios.
 
 ### Best Practices
 
@@ -645,28 +645,28 @@ jobs:
 5. **Clean up after tests** - `docker compose down -v` removes volumes too
 6. **Use BuildKit** - faster builds with better caching (enabled by default)
 
-## Für Entwickler
+## For Developers
 
-Alle Workflows in dieser Organisation unterstützen Self-Hosted GitHub Actions Runner. Dies ermöglicht:
+All workflows in this organization support self-hosted GitHub Actions runners. This enables:
 
-- **Kostenkontrolle**: Keine GitHub Actions Minutes Verbrauch
-- **Custom Hardware**: Nutzung spezialisierter Hardware (GPU, viel RAM, etc.)
-- **Netzwerkzugang**: Zugriff auf interne Netzwerke und Ressourcen
-- **Compliance**: Builds innerhalb der eigenen Infrastruktur
-- **Performance**: Schnellere Builds mit lokalen Ressourcen
+- **Cost Control**: No GitHub Actions minutes consumption
+- **Custom Hardware**: Use specialized hardware (GPU, high RAM, etc.)
+- **Network Access**: Access to internal networks and resources
+- **Compliance**: Builds within your own infrastructure
+- **Performance**: Faster builds with local resources
 
-> **Wichtig**: Self-Hosted Runner außerhalb von GitHub's Infrastruktur haben keinen Zugriff auf den GitHub Actions Cache Service. Siehe [Cache-Konfiguration](#cache-konfiguration) für Details.
+> **Important**: Self-hosted runners outside of GitHub's infrastructure do not have access to the GitHub Actions Cache Service. See [Cache Configuration](#cache-configuration) for details.
 
-### Runner-Konfiguration via Org-Variable
+### Runner Configuration via Org Variable
 
-Die Organisation stellt eine Variable `RUNNER_LINUX` bereit, um Self-Hosted Runner zentral zu aktivieren:
+The organization provides a variable `RUNNER_LINUX` to centrally enable self-hosted runners:
 
-| `vars.RUNNER_LINUX` | Verwendeter Runner |
-|---------------------|-------------------|
-| Nicht gesetzt | `ubuntu-latest` (GitHub-hosted) |
-| `["self-hosted", "linux"]` | Self-Hosted Runner |
+| `vars.RUNNER_LINUX`          | Runner Used                   |
+|------------------------------|-------------------------------|
+| Not set                      | `ubuntu-latest` (GitHub-hosted) |
+| `["self-hosted", "linux"]`   | Self-Hosted Runner            |
 
-**Verwendung in Workflows:**
+**Usage in workflows:**
 
 ```yaml
 jobs:
@@ -677,35 +677,35 @@ jobs:
       - run: echo "Running on ${{ runner.name }}"
 ```
 
-### Mit Reusable Workflows
+### With Reusable Workflows
 
 ```yaml
-# Aufruf eines Reusable Workflows mit Self-Hosted Runner
+# Call a reusable workflow with self-hosted runner
 jobs:
   build:
     uses: bauer-group/automation-templates/.github/workflows/docker-build.yml@main
     with:
       runs-on: ${{ vars.RUNNER_LINUX && toJSON(fromJSON(vars.RUNNER_LINUX)) || '"ubuntu-latest"' }}
-      cache-enabled: ${{ !vars.RUNNER_LINUX }}  # Cache nur für GitHub-hosted
+      cache-enabled: ${{ !vars.RUNNER_LINUX }}  # Cache only for GitHub-hosted
 ```
 
-### Cache-Konfiguration
+### Cache Configuration
 
-Self-Hosted Runner haben **keinen Zugriff** auf den GitHub Actions Cache Service (`actions/cache`). Daher:
+Self-hosted runners have **no access** to the GitHub Actions Cache Service (`actions/cache`). Therefore:
 
-| Runner-Typ | `actions/cache` | Docker Layer Cache | Registry Cache |
-|------------|-----------------|-------------------|----------------|
-| GitHub-hosted | ✅ Funktioniert | ❌ Nicht persistent | ✅ Funktioniert |
-| Self-hosted | ❌ Nicht verfügbar | ✅ Lokal persistent | ✅ Funktioniert |
+| Runner Type   | `actions/cache` | Docker Layer Cache | Registry Cache |
+|---------------|-----------------|-------------------|----------------|
+| GitHub-hosted | ✅ Works        | ❌ Not persistent  | ✅ Works       |
+| Self-hosted   | ❌ Not available | ✅ Locally persistent | ✅ Works    |
 
-**Empfehlungen für Self-Hosted:**
+**Recommendations for self-hosted:**
 
-1. **Docker Layer Cache nutzen** - Bleibt lokal erhalten zwischen Jobs
-2. **Registry Cache** - `docker/build-push-action` mit `cache-to: type=registry`
-3. **`cache-enabled: false`** - Bei Reusable Workflows mit Cache-Option
+1. **Use Docker layer cache** - Persists locally between jobs
+2. **Registry cache** - `docker/build-push-action` with `cache-to: type=registry`
+3. **`cache-enabled: false`** - For reusable workflows with cache option
 
 ```yaml
-# Beispiel: Docker Build mit Registry Cache (Self-Hosted kompatibel)
+# Example: Docker build with registry cache (self-hosted compatible)
 - uses: docker/build-push-action@v5
   with:
     context: .
@@ -713,13 +713,13 @@ Self-Hosted Runner haben **keinen Zugriff** auf den GitHub Actions Cache Service
     cache-to: type=registry,ref=ghcr.io/${{ github.repository }}:cache,mode=max
 ```
 
-### Links für Entwickler
+### Developer Links
 
-| Ressource | Link |
-|-----------|------|
-| Docker-in-Docker Solution | <https://github.com/bauer-group/GitHubRunner> |
+| Resource                  | Link                                                                                      |
+|---------------------------|-------------------------------------------------------------------------------------------|
+| Docker-in-Docker Solution | <https://github.com/bauer-group/GitHubRunner>                                             |
 | GitHub Actions Cache Docs | <https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows> |
-| Docker Build Cache | <https://docs.docker.com/build/cache/> |
+| Docker Build Cache        | <https://docs.docker.com/build/cache/>                                                    |
 
 ### Troubleshooting Workflows
 
@@ -766,106 +766,106 @@ All runners share a single DinD instance (shared Docker cache for faster builds)
 
 ### runner.sh - Unified Management Tool
 
-Zentrales Script für alle Runner-Operationen.
+Central script for all runner operations.
 
 ```bash
 ./runner.sh <command> [options]
 ```
 
-**Befehle:**
+**Commands:**
 
-| Command | Beschreibung |
-|---------|--------------|
-| `start [N]` | N Runner starten (Standard: 1) |
-| `stop` | Alle Runner stoppen |
-| `status` | Status und Ressourcen anzeigen |
-| `scale N` | Auf N Runner skalieren |
-| `logs [service]` | Logs anzeigen (agent, docker-in-docker) |
-| `cleanup` | Basis-Cleanup (Work-Verzeichnisse) |
-| `cleanup --full` | Vollständiger Cleanup (Volumes, Images) |
-| `deploy` | Updates pullen, Berechtigungen setzen |
-| `deploy --init` | Erstinstallation mit Setup |
-| `help` | Hilfe anzeigen |
+| Command         | Description                              |
+|-----------------|------------------------------------------|
+| `start [N]`     | Start N runners (default: 1)             |
+| `stop`          | Stop all runners                         |
+| `status`        | Show status and resources                |
+| `scale N`       | Scale to N runners                       |
+| `logs [service]`| Show logs (agent, docker-in-docker)      |
+| `cleanup`       | Basic cleanup (work directories)         |
+| `cleanup --full`| Full cleanup (volumes, images)           |
+| `deploy`        | Pull updates, set permissions            |
+| `deploy --init` | Initial deployment with setup            |
+| `help`          | Show help                                |
 
-**Beispiele:**
+**Examples:**
 
 ```bash
-# Runner starten
-./runner.sh start 4        # 4 parallele Runner starten
-./runner.sh status         # Status anzeigen
-./runner.sh scale 8        # Auf 8 Runner skalieren
-./runner.sh logs agent     # Runner-Logs verfolgen
+# Start runners
+./runner.sh start 4        # Start 4 parallel runners
+./runner.sh status         # Show status
+./runner.sh scale 8        # Scale to 8 runners
+./runner.sh logs agent     # Follow runner logs
 
-# Wartung
-./runner.sh cleanup --full # Docker-Cleanup
-./runner.sh deploy         # Updates einspielen
+# Maintenance
+./runner.sh cleanup --full # Docker cleanup
+./runner.sh deploy         # Apply updates
 
-# Erstinstallation
-./runner.sh deploy --init  # Initiales Setup
+# Initial setup
+./runner.sh deploy --init  # Initial setup
 ```
 
-### Setup-Scripts
+### Setup Scripts
 
-Diese Scripts bleiben separat für die Erstkonfiguration:
+These scripts remain separate for initial configuration:
 
 #### setup-env.sh
 
-Interaktiver Assistent für die `.env`-Konfiguration.
+Interactive assistant for `.env` configuration.
 
 ```bash
 ./scripts/setup-env.sh
 ```
 
-Fragt ab: GitHub Token, Organisation/Repo, Runner-Scope, Labels, Gruppe.
+Prompts for: GitHub token, organization/repo, runner scope, labels, group.
 
 #### create-github-app.sh
 
-Erstellt eine GitHub App mit minimalen Berechtigungen. **Empfohlen statt PAT!**
+Creates a GitHub App with minimal permissions. **Recommended over PAT!**
 
 ```bash
-./scripts/create-github-app.sh           # Automatisch (Python)
-./scripts/create-github-app.sh --manual  # Manuelle Anleitung
+./scripts/create-github-app.sh           # Automatic (Python)
+./scripts/create-github-app.sh --manual  # Manual instructions
 ```
 
-**Automatischer Modus (Standard):**
+**Automatic mode (default):**
 
-Das Python-Tool öffnet den Browser, erstellt die App und konfiguriert alles automatisch:
+The Python tool opens the browser, creates the app, and configures everything automatically:
 
-1. Startet lokalen Callback-Server (Port 8765)
-2. Öffnet GitHub im Browser zur App-Erstellung
-3. Empfängt die Credentials automatisch via Callback
-4. Speichert den Private Key
-5. Aktualisiert die `.env`
+1. Starts local callback server (port 8765)
+2. Opens GitHub in browser for app creation
+3. Receives credentials automatically via callback
+4. Saves the private key
+5. Updates the `.env`
 
-**Bei Remote-Server (SSH):**
+**For remote server (SSH):**
 
 ```bash
-# SSH mit Port-Forwarding
+# SSH with port forwarding
 ssh -L 8765:localhost:8765 user@server
 
-# Script starten - URL wird direkt angezeigt
+# Start script - URL is displayed directly
 ./scripts/create-github-app.sh
 
-# URL aus Terminal kopieren → im lokalen Browser öffnen
-# Callback kommt über Port-Forward zurück zum Server
+# Copy URL from terminal → open in local browser
+# Callback comes back to server via port forward
 ```
 
-**Vorteile gegenüber PAT:**
+**Advantages over PAT:**
 
-- Nur minimale Berechtigungen (nicht voller `admin:org` Zugriff)
-- Automatische Token-Rotation
-- Bessere Audit-Logs
-- Kein manuelles Key-Management
+- Only minimal permissions (not full `admin:org` access)
+- Automatic token rotation
+- Better audit logs
+- No manual key management
 
-### Windows-Nutzung
+### Windows Usage
 
-Auf Windows können die Scripts über den Tools-Container ausgeführt werden:
+On Windows, scripts can be executed via the tools container:
 
 ```powershell
-# Interaktiver Modus
+# Interactive mode
 .\tools\run.ps1
 
-# Script direkt ausführen
+# Execute script directly
 .\tools\run.ps1 -Script "./runner.sh start 4"
 .\tools\run.ps1 -Script "./runner.sh status"
 ```
@@ -875,15 +875,15 @@ Auf Windows können die Scripts über den Tools-Container ausgeführt werden:
 ### View Logs
 
 ```bash
-./runner.sh logs           # Alle Services
-./runner.sh logs agent     # Nur Runner
+./runner.sh logs           # All services
+./runner.sh logs agent     # Runner only
 ```
 
 ### Cleanup
 
 ```bash
-./runner.sh cleanup        # Basis-Cleanup
-./runner.sh cleanup --full # Vollständiger Cleanup
+./runner.sh cleanup        # Basic cleanup
+./runner.sh cleanup --full # Full cleanup
 ```
 
 ### Update Runner Image
@@ -966,9 +966,9 @@ GitHubRunner/
 │   ├── dependabot.yml
 │   └── CODEOWNERS
 ├── scripts/
-│   ├── setup-env.sh          # Interaktive .env Konfiguration
-│   ├── create-github-app.sh  # GitHub App erstellen (Wrapper)
-│   └── setup-github-app.py   # Automatisiertes GitHub App Setup
+│   ├── setup-env.sh          # Interactive .env configuration
+│   ├── create-github-app.sh  # Create GitHub App (wrapper)
+│   └── setup-github-app.py   # Automated GitHub App setup
 ├── tools/
 │   ├── Dockerfile
 │   ├── run.sh
