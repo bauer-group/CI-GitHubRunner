@@ -208,6 +208,16 @@ cmd_scale() {
 cmd_cleanup() {
     local full_cleanup=false
     local compose_cmd=$(get_compose_cmd)
+    # Resolve the compose project name from .env (falls back to the
+    # docker-compose.yml default). Used to scope every destructive volume
+    # operation strictly to THIS stack via the compose-project label, so
+    # volumes from other stacks on the same Docker host are never touched.
+    local project_name="github-runner"
+    if [ -f "$PROJECT_ROOT/.env" ]; then
+        local stack_name
+        stack_name=$(grep "^STACK_NAME=" "$PROJECT_ROOT/.env" 2>/dev/null | cut -d'=' -f2)
+        [ -n "$stack_name" ] && project_name="$stack_name"
+    fi
 
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -225,11 +235,14 @@ cmd_cleanup() {
 
     cd "$PROJECT_ROOT"
 
-    echo -e "${BLUE}Stopping containers...${NC}"
+    echo -e "${BLUE}Stopping containers (project: ${project_name})...${NC}"
     $compose_cmd down --remove-orphans 2>/dev/null || true
 
-    echo -e "${BLUE}Cleaning up runner work directories...${NC}"
-    docker volume ls -q | grep -E "runner.*work" | xargs -r docker volume rm 2>/dev/null || true
+    echo -e "${BLUE}Cleaning up runner work volumes (scoped to ${project_name})...${NC}"
+    docker volume ls -q \
+        --filter "label=com.docker.compose.project=${project_name}" \
+        --filter "name=work" 2>/dev/null \
+        | xargs -r docker volume rm 2>/dev/null || true
 
     if [ "$full_cleanup" = true ]; then
         echo ""
