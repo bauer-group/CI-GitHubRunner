@@ -126,6 +126,53 @@ services:
         max-file: "5"
 
   # ---------------------------------------------------------------------------
+  # Cleanup Manager
+  # ---------------------------------------------------------------------------
+  # Sidecar that periodically removes leaked offline-runner registrations
+  # from GitHub. Reuses the same .env auth (PAT or GitHub App) as the
+  # agents above. Schedule and behavior are tuned via CLEANUP_* env vars
+  # (see .env.example).
+  cleanup-manager:
+    build:
+      context: ./src/cleanup-manager
+    container_name: ${STACK_NAME:-github-runner}-cleanup
+    restart: unless-stopped
+    # Generous grace so an in-flight cleanup pass can finish on `compose down`
+    stop_grace_period: 60s
+    labels:
+      # Allow the optional auto-update profile to keep this image current
+      com.centurylinklabs.watchtower.enable: "true"
+    environment:
+      # ---- Auth/scope (inherited from the runner config) ----
+      GITHUB_ACCESS_TOKEN: ${GITHUB_ACCESS_TOKEN:-}
+      APP_ID: ${APP_ID:-}
+      # The PEM is mounted via docker-compose.app-auth.yml when App auth is used.
+      APP_PRIVATE_KEY_FILE: /opt/github-app.pem
+      ORG_NAME: ${ORG_NAME:-}
+      REPO_URL: ${REPO_URL:-}
+      RUNNER_SCOPE: ${RUNNER_SCOPE:-org}
+      # ---- Cleanup behavior ----
+      CLEANUP_SCHEDULE_ENABLED: ${CLEANUP_SCHEDULE_ENABLED:-true}
+      CLEANUP_SCHEDULE_MODE: ${CLEANUP_SCHEDULE_MODE:-cron}
+      CLEANUP_SCHEDULE_HOUR: ${CLEANUP_SCHEDULE_HOUR:-4}
+      CLEANUP_SCHEDULE_MINUTE: ${CLEANUP_SCHEDULE_MINUTE:-0}
+      CLEANUP_SCHEDULE_DAY_OF_WEEK: ${CLEANUP_SCHEDULE_DAY_OF_WEEK:-6}
+      CLEANUP_SCHEDULE_INTERVAL_HOURS: ${CLEANUP_SCHEDULE_INTERVAL_HOURS:-168}
+      CLEANUP_MIN_AGE_DAYS: ${CLEANUP_MIN_AGE_DAYS:-1}
+      CLEANUP_RESERVE_PCT: ${CLEANUP_RESERVE_PCT:-0.10}
+      CLEANUP_FLOOR_DELAY: ${CLEANUP_FLOOR_DELAY:-0.5}
+      CLEANUP_RUN_ON_STARTUP: ${CLEANUP_RUN_ON_STARTUP:-false}
+      LOG_LEVEL: ${CLEANUP_LOG_LEVEL:-INFO}
+      TZ: ${TIME_ZONE:-Etc/UTC}
+    networks:
+      - runner-network
+    logging:
+      driver: json-file
+      options:
+        max-size: ${LOG_MAX_SIZE:-50m}
+        max-file: "5"
+
+  # ---------------------------------------------------------------------------
   # Watchtower (optional, profile: auto-update)
   # ---------------------------------------------------------------------------
   # Auto-updates labelled containers on a cron schedule. Opt-in via:

@@ -399,17 +399,15 @@ cmd_cleanup_runners() {
     print_header "Cleanup Offline Runners"
     check_env
 
-    local python_cmd=""
-    if command -v python3 >/dev/null 2>&1; then
-        python_cmd=python3
-    elif command -v python >/dev/null 2>&1; then
-        python_cmd=python
-    else
-        echo -e "${RED}Error: Python 3 is required to run cleanup-runners${NC}" >&2
-        exit 1
-    fi
+    local compose_cmd=$(get_compose_cmd)
+    cd "$PROJECT_ROOT"
 
-    "$python_cmd" "$PROJECT_ROOT/scripts/cleanup-runners.py" "$@"
+    # The cleanup-manager service is part of the stack and runs the same
+    # code on a schedule. For ad-hoc cleanups we spin up a one-off
+    # container that exits when the cleanup pass is done - this reuses
+    # the image, env, and (under app-auth) the PEM mount automatically.
+    echo -e "${BLUE}Running one-off cleanup via cleanup-manager container...${NC}"
+    $compose_cmd run --rm --no-deps cleanup-manager --now "$@"
 }
 
 cmd_help() {

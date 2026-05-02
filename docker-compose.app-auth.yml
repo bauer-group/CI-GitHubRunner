@@ -25,3 +25,10 @@ services:
       - |
         export APP_PRIVATE_KEY="$$(cat /opt/github-app.pem)"
         exec /entrypoint.sh ./bin/Runner.Listener run --startuptype service
+
+  # Cleanup-manager also needs the PEM for JWT-based App auth.
+  # The base service has APP_PRIVATE_KEY_FILE=/opt/github-app.pem in its env;
+  # this override just makes sure that path actually contains the key.
+  cleanup-manager:
+    volumes:
+      - ${APP_PRIVATE_KEY_FILE:-./github-app.pem}:/opt/github-app.pem:ro
