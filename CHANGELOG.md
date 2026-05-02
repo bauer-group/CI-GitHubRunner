@@ -1,3 +1,9 @@
+## [0.8.2](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.8.1...v0.8.2) (2026-05-02)
+
+### ♻️ Refactoring
+
+* **cleanup-manager:** clean layout + privilege-drop after secret read ([d15a5c2](https://github.com/bauer-group/CI-GitHubRunner/commit/d15a5c2bf306c2e168a09c08c212c68f3103cff1))
+
 ## [0.8.1](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.8.0...v0.8.1) (2026-05-02)
 
 ### 🐛 Bug Fixes
