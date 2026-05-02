@@ -1,3 +1,9 @@
+## [0.5.0](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.4.2...v0.5.0) (2026-05-02)
+
+### 🚀 Features
+
+* **scripts:** added cleanup-runners.py for mass offline-runner removal ([d10d1e1](https://github.com/bauer-group/CI-GitHubRunner/commit/d10d1e159aa9d6c947dbbbd37e1e1c007d25e051))
+
 ## [0.4.2](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.4.1...v0.4.2) (2026-05-02)
 
 ### 🐛 Bug Fixes
