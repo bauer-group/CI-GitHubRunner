@@ -20,6 +20,61 @@ from rate_limit import RateLimit
 API_BASE = "https://api.github.com"
 
 
+def _summarize_error(code: int, body_text: str) -> str:
+    """Produce a short, human-readable error string.
+
+    GitHub returns three response styles:
+      - JSON object with a `message` field (4xx, well-formed errors)
+      - HTML error page (5xx gateway/backend, the famous "Hello future
+        GitHubber!" splash)
+      - Plain text fallback
+    """
+    try:
+        data = json.loads(body_text)
+        if isinstance(data, dict) and "message" in data:
+            return f"HTTP {code}: {data['message']}"
+    except (ValueError, TypeError):
+        pass
+    lower = body_text.lstrip()[:200].lower()
+    if lower.startswith("<!doctype html") or lower.startswith("<html"):
+        return f"HTTP {code} (HTML error page - GitHub gateway/backend issue)"
+    snippet = body_text.strip().replace("\n", " ")[:80]
+    return f"HTTP {code}: {snippet}" if snippet else f"HTTP {code}"
+
+
+def _retry_delay(code: int, headers: dict, body_text: str) -> int | None:
+    """Return seconds to wait before retrying, or None if not retryable.
+
+    Two retry-worthy conditions:
+      1. Secondary rate limit (403/429 + abuse/secondary message or
+         Retry-After header). Honor Retry-After exactly.
+      2. Transient gateway/backend errors (502/503/504). Honor
+         Retry-After if present, otherwise a short fixed delay.
+    """
+    lower_headers = {k.lower(): v for k, v in headers.items()}
+    retry_after_hdr = lower_headers.get("retry-after")
+
+    if code in (403, 429):
+        text_lower = body_text.lower()
+        if (
+            "secondary rate limit" in text_lower
+            or "abuse" in text_lower
+            or retry_after_hdr is not None
+        ):
+            try:
+                return int(retry_after_hdr) if retry_after_hdr else 60
+            except (TypeError, ValueError):
+                return 60
+
+    if code in (500, 502, 503, 504):
+        try:
+            return int(retry_after_hdr) if retry_after_hdr else 10
+        except (TypeError, ValueError):
+            return 10
+
+    return None
+
+
 def _api_request(
     url: str,
     token: str,
@@ -28,9 +83,8 @@ def _api_request(
 ) -> tuple[dict | None, dict, int | None]:
     """Perform a GitHub API request.
 
-    Returns: (data, headers, retry_after_sec)
-        retry_after_sec is set only on secondary-rate-limit responses
-        (403/429 with abuse/secondary-limit body or Retry-After header).
+    Returns: (data, headers, retry_after_sec) - last field always None
+    on success; HTTPError carries it via the wrapped exception below.
     """
     req = urllib.request.Request(url, method=method, data=body)
     req.add_header("Authorization", f"Bearer {token}")
@@ -49,22 +103,10 @@ def _api_request(
     except urllib.error.HTTPError as e:
         body_text = e.read().decode(errors="replace")
         headers = dict(e.headers or {})
-        retry_after = None
-        if e.code in (403, 429):
-            text_lower = body_text.lower()
-            if (
-                "secondary rate limit" in text_lower
-                or "abuse" in text_lower
-                or "Retry-After" in headers
-            ):
-                try:
-                    retry_after = int(headers.get("Retry-After", "60"))
-                except (TypeError, ValueError):
-                    retry_after = 60
-        # Wrap the error so callers get structured info but still raise
         e.body_text = body_text  # type: ignore[attr-defined]
-        e.retry_after = retry_after  # type: ignore[attr-defined]
         e.gh_headers = headers  # type: ignore[attr-defined]
+        e.short_msg = _summarize_error(e.code, body_text)  # type: ignore[attr-defined]
+        e.retry_after = _retry_delay(e.code, headers, body_text)  # type: ignore[attr-defined]
         raise
 
 
@@ -96,7 +138,7 @@ def delete_runner(
         return (
             False,
             getattr(e, "gh_headers", {}),
-            f"HTTP {e.code}: {getattr(e, 'body_text', '')[:120]}",
+            getattr(e, "short_msg", f"HTTP {e.code}"),
             getattr(e, "retry_after", None),
         )
 
@@ -189,22 +231,37 @@ def run_cleanup(settings: Settings) -> bool:
         ok_, headers, errmsg, retry_after = delete_runner(scope, rid, token)
         rate.update(headers)
 
-        # Reactive: secondary rate limit hit -> sleep Retry-After + retry once
+        # Reactive: retry once on transient errors (secondary limit OR 5xx).
+        # Distinguish so floor_delay is only raised for actual rate-limit
+        # hits, not for backend hiccups (HTTP 502/503/504).
         if not ok_ and retry_after is not None:
-            cleanup_logger.warning(
-                f"Secondary rate limit hit at request {i}. "
-                f"Sleeping {retry_after}s (Retry-After)..."
-            )
-            rate.react_to_secondary(retry_after)
+            is_secondary = errmsg is not None and errmsg.startswith(("HTTP 403", "HTTP 429"))
+            if is_secondary:
+                cleanup_logger.warning(
+                    f"Secondary rate limit at request {i}, sleeping "
+                    f"{retry_after}s (Retry-After)..."
+                )
+                rate.react_to_secondary(retry_after)
+            else:
+                cleanup_logger.status(
+                    f"Transient: {errmsg} at request {i}, retrying in {retry_after}s..."
+                )
             time.sleep(retry_after + 1)
             ok_, headers, errmsg, retry_after2 = delete_runner(scope, rid, token)
             rate.update(headers)
-            if retry_after2 is not None:
-                rate.react_to_secondary(retry_after2)
-                cleanup_logger.warning(
-                    f"Secondary limit hit again. floor-delay raised to "
-                    f"{rate.floor_delay}s, will retry runner {rname} next run."
-                )
+            # Second hit handling
+            if not ok_ and retry_after2 is not None:
+                is_secondary2 = errmsg is not None and errmsg.startswith(("HTTP 403", "HTTP 429"))
+                if is_secondary2:
+                    rate.react_to_secondary(retry_after2)
+                    cleanup_logger.warning(
+                        f"Secondary limit hit again. floor-delay raised to "
+                        f"{rate.floor_delay}s, will retry runner {rname} next run."
+                    )
+                else:
+                    cleanup_logger.status(
+                        f"Still transient ({errmsg}), giving up on {rname} for now"
+                    )
 
         if ok_:
             deleted += 1
