@@ -10,7 +10,7 @@ pydantic>=2.12.0
 pydantic-settings>=2.14.0
 
 # Console UI
-rich>=14.0.0
+rich>=15.0.0
 
 # JWT signing for GitHub App auth (RS256)
 PyJWT[crypto]>=2.12.1
