@@ -69,7 +69,12 @@ services:
   # GitHub Actions Runner
   # ---------------------------------------------------------------------------
   agent:
-    image: myoung34/github-runner:latest
+    # Pinned image tag - never use :latest here. A stale cached :latest
+    # whose runner version GitHub has since deprecated leads to a
+    # crash-loop where every container start creates a new offline
+    # registration that GitHub will only auto-clean after 30 days.
+    # See RUNNER_IMAGE_TAG in .env.example for how/when to bump.
+    image: myoung34/github-runner:${RUNNER_IMAGE_TAG:-2.336.0}
     restart: unless-stopped
     # SIGTERM grace period. Tunable via .env so operators can match it
     # to their typical job duration:
