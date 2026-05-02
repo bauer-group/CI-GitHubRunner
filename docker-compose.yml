@@ -71,14 +71,25 @@ services:
   agent:
     image: myoung34/github-runner:latest
     restart: unless-stopped
-    # Give the entrypoint time to call the GitHub deregister API on SIGTERM
-    # before SIGKILL hits. Default of 10s frequently isn't enough when:
-    #   - a job is running (Runner.Listener waits for it to finish)
-    #   - api.github.com has elevated latency
-    #   - DNS resolution is slow on first contact
-    # Without this, every `compose down` and every `--scale` reduction
-    # leaks one offline-runner registration per stopped container.
-    stop_grace_period: 120s
+    # SIGTERM grace period. Tunable via .env so operators can match it
+    # to their typical job duration:
+    #   - Lint/format-only jobs (<60s) -> 60s
+    #   - Mixed workload (default)     -> 5m
+    #   - Long builds / e2e tests      -> 15m+
+    # During stop, Runner.Listener finishes the active job, then makes
+    # the deregister API call. If grace is too short, jobs get killed
+    # mid-flight and registrations leak as offline.
+    stop_grace_period: ${AGENT_STOP_GRACE:-5m}
+    # Intentionally NOT labelled for Watchtower auto-update. The
+    # myoung34/github-runner image has its own in-process update
+    # mechanism (DISABLE_AUTO_UPDATE=false below) which refreshes the
+    # .NET Runner.Listener binary safely between jobs without ever
+    # restarting the container. That is strictly safer than a
+    # Watchtower-driven container restart, which could SIGTERM an
+    # in-flight job. The trade-off: the OS base image stays at
+    # whatever myoung34/github-runner:latest was at last manual pull -
+    # acceptable here because the agent runs untrusted CI code in
+    # isolated DinD anyway and exposes no network services itself.
     environment:
       # Authentication: Use ACCESS_TOKEN (PAT) or APP_ID/APP_LOGIN (GitHub App)
       # For GitHub App: APP_PRIVATE_KEY is set by docker-compose.app-auth.yml override
@@ -137,8 +148,11 @@ services:
       context: ./src/cleanup-manager
     container_name: ${STACK_NAME:-github-runner}-cleanup
     restart: unless-stopped
-    # Generous grace so an in-flight cleanup pass can finish on `compose down`
-    stop_grace_period: 60s
+    # Short grace is fine: an interrupted cleanup pass is idempotent
+    # (the next scheduled run picks up the remaining offline runners).
+    # The only thing we're waiting for here is the in-flight HTTP
+    # request to finish (urllib timeout is 30s).
+    stop_grace_period: 20s
     labels:
       # Allow the optional auto-update profile to keep this image current
       com.centurylinklabs.watchtower.enable: "true"
@@ -178,9 +192,11 @@ services:
   # Auto-updates labelled containers on a cron schedule. Opt-in via:
   #   COMPOSE_PROFILES=auto-update
   # Only services tagged with `com.centurylinklabs.watchtower.enable=true`
-  # are updated (currently: docker-in-docker). The runner agent has its own
-  # in-process self-update mechanism (DISABLE_AUTO_UPDATE=false) and is
-  # intentionally NOT labelled, so active jobs are never restarted.
+  # are updated (currently: docker-in-docker, cleanup-manager).
+  # The runner agent is intentionally NOT in this list - it uses its own
+  # in-process self-update for the Runner.Listener binary, which is
+  # safer than a Watchtower-driven container restart that could kill an
+  # in-flight job.
   watchtower:
     image: ${WATCHTOWER_IMAGE:-marrrrrrrrry/watchtower:latest}
     container_name: ${STACK_NAME:-github-runner}-watchtower
