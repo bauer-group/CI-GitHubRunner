@@ -148,11 +148,9 @@ services:
       context: ./src/cleanup-manager
     container_name: ${STACK_NAME:-github-runner}-cleanup
     restart: unless-stopped
-    # Short grace is fine: an interrupted cleanup pass is idempotent
-    # (the next scheduled run picks up the remaining offline runners).
-    # The only thing we're waiting for here is the in-flight HTTP
-    # request to finish (urllib timeout is 30s).
-    stop_grace_period: 20s
+    # No custom stop_grace_period: an interrupted cleanup pass is
+    # idempotent (the next scheduled run finds the same offline
+    # runners and tries again), so default 10s is plenty.
     labels:
       # Allow the optional auto-update profile to keep this image current
       com.centurylinklabs.watchtower.enable: "true"
