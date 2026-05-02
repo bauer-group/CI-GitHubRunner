@@ -1,3 +1,9 @@
+## [0.4.2](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.4.1...v0.4.2) (2026-05-02)
+
+### 🐛 Bug Fixes
+
+* **cleanup:** replaced host-wide image/builder prune with stack-scoped down ([1a07d70](https://github.com/bauer-group/CI-GitHubRunner/commit/1a07d70d9504e9a71eff891d4f59176809db33ad))
+
 ## [0.4.1](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.4.0...v0.4.1) (2026-05-02)
 
 ### 🐛 Bug Fixes
