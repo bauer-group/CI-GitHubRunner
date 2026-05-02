@@ -1,3 +1,9 @@
+## [0.7.2](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.7.1...v0.7.2) (2026-05-02)
+
+### 🐛 Bug Fixes
+
+* **cleanup-manager:** removed unnecessary stop_grace_period override ([a30f46c](https://github.com/bauer-group/CI-GitHubRunner/commit/a30f46cff19adadfa8dbf7ade6f86b576a9dcc14))
+
 ## [0.7.1](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.7.0...v0.7.1) (2026-05-02)
 
 ### 🐛 Bug Fixes
