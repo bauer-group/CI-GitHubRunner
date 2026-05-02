@@ -99,7 +99,10 @@ cmd_start() {
     check_env
 
     echo -e "${BLUE}Starting DinD and $scale runner(s)...${NC}"
-    $compose_cmd up -d --scale agent="$scale"
+    # --build rebuilds locally-built images (cleanup-manager) when their
+    # Dockerfile or source files have changed. No-op (~1-2s with cache)
+    # for the runner agent and DinD which use external images.
+    $compose_cmd up -d --build --scale agent="$scale"
 
     echo ""
     echo -e "${GREEN}Started successfully!${NC}"
@@ -190,7 +193,8 @@ cmd_scale() {
     check_env
 
     echo -e "${BLUE}Scaling runners...${NC}"
-    $compose_cmd up -d --scale agent="$scale"
+    # --build keeps locally-built images current; see cmd_start for rationale.
+    $compose_cmd up -d --build --scale agent="$scale"
 
     echo ""
     echo -e "${GREEN}Done!${NC}"
@@ -330,18 +334,26 @@ cmd_deploy() {
 
     echo -e "${GREEN}Repository updated${NC}"
 
-    # Pull Latest Container Images
-    # CRITICAL: prevents the "stale runner image" trap where
-    # myoung34/github-runner:latest has been cached locally for months
-    # while GitHub deprecated that runner version. The deprecated
-    # runner registers, gets rejected by GitHub, exits, container
-    # restarts via unless-stopped, repeats - leaking thousands of
-    # offline registrations until the image is manually refreshed.
+    # Refresh container images
+    #
+    # External images (agent, DinD, watchtower): `compose pull` fetches
+    # newer registry digests. Critical against the "stale myoung34
+    # cache + deprecated runner version" trap that was the root cause
+    # of the recent 9907-runner leak incident.
+    #
+    # Locally-built images (cleanup-manager): `compose build` picks up
+    # Dockerfile and src/ changes. Without this, `compose up` reuses
+    # the previously-built image even if the code has moved on, which
+    # caused the "USER directive still in effect after privilege-drop
+    # refactor" debugging episode.
     echo ""
-    echo -e "${BLUE}Pulling latest container images...${NC}"
+    echo -e "${BLUE}Pulling external images...${NC}"
     local compose_cmd=$(get_compose_cmd)
     $compose_cmd pull --ignore-pull-failures 2>/dev/null || \
         $compose_cmd pull || true
+
+    echo -e "${BLUE}Building locally-defined images...${NC}"
+    $compose_cmd build --pull 2>&1 | tail -5 || true
     echo -e "${GREEN}Images refreshed${NC}"
 
     # Make Scripts Executable
