@@ -6,7 +6,7 @@
 APScheduler==4.0.0a6
 
 # Configuration via type-safe ENV parsing
-pydantic>=2.12.0
+pydantic>=2.13.3
 pydantic-settings>=2.14.0
 
 # Console UI
