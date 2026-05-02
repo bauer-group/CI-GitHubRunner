@@ -1,3 +1,9 @@
+## [0.7.1](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.7.0...v0.7.1) (2026-05-02)
+
+### 🐛 Bug Fixes
+
+* **stack:** tuned stop_grace_period per service, kept agent on self-update ([e244496](https://github.com/bauer-group/CI-GitHubRunner/commit/e244496d6ae331ec6467e8204d52a6a847a570bf))
+
 ## [0.7.0](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.6.0...v0.7.0) (2026-05-02)
 
 ### 🚀 Features
