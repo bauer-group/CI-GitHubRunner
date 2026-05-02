@@ -69,12 +69,12 @@ services:
   # GitHub Actions Runner
   # ---------------------------------------------------------------------------
   agent:
-    # Pinned image tag - never use :latest here. A stale cached :latest
-    # whose runner version GitHub has since deprecated leads to a
-    # crash-loop where every container start creates a new offline
-    # registration that GitHub will only auto-clean after 30 days.
-    # See RUNNER_IMAGE_TAG in .env.example for how/when to bump.
-    image: myoung34/github-runner:${RUNNER_IMAGE_TAG:-2.336.0}
+    # Default :latest gets refreshed automatically by Watchtower (when
+    # the auto-update profile is active) and on every `runner.sh deploy`
+    # via `compose pull`. Override via RUNNER_IMAGE_TAG in .env if you
+    # need to pin to a specific version (e.g. testing a new GHA runner
+    # release before rolling it out).
+    image: myoung34/github-runner:${RUNNER_IMAGE_TAG:-latest}
     restart: unless-stopped
     # SIGTERM grace period. Tunable via .env so operators can match it
     # to their typical job duration:
@@ -85,16 +85,20 @@ services:
     # the deregister API call. If grace is too short, jobs get killed
     # mid-flight and registrations leak as offline.
     stop_grace_period: ${AGENT_STOP_GRACE:-5m}
-    # Intentionally NOT labelled for Watchtower auto-update. The
-    # myoung34/github-runner image has its own in-process update
-    # mechanism (DISABLE_AUTO_UPDATE=false below) which refreshes the
-    # .NET Runner.Listener binary safely between jobs without ever
-    # restarting the container. That is strictly safer than a
-    # Watchtower-driven container restart, which could SIGTERM an
-    # in-flight job. The trade-off: the OS base image stays at
-    # whatever myoung34/github-runner:latest was at last manual pull -
-    # acceptable here because the agent runs untrusted CI code in
-    # isolated DinD anyway and exposes no network services itself.
+    labels:
+      # Watchtower auto-update is the only effective update path for
+      # ephemeral runners: the in-process self-update modifies the
+      # Listener binary inside a live container, but since each
+      # ephemeral container exits after one job and the next one
+      # starts fresh from the image, that update is lost. Watchtower
+      # updates the IMAGE on the host daemon, so subsequently spawned
+      # containers pick up the new version automatically. Combined
+      # with WATCHTOWER_ROLLING_RESTART (one agent at a time),
+      # WATCHTOWER_TIMEOUT matching stop_grace_period, and the
+      # Sunday-03:00 schedule, in-flight jobs get a fair chance to
+      # complete before the swap. Anything that exceeds the grace
+      # window is killed and mopped up by cleanup-manager later.
+      com.centurylinklabs.watchtower.enable: "true"
     environment:
       # Authentication: Use ACCESS_TOKEN (PAT) or APP_ID/APP_LOGIN (GitHub App)
       # For GitHub App: APP_PRIVATE_KEY is set by docker-compose.app-auth.yml override
@@ -198,12 +202,19 @@ services:
   # ---------------------------------------------------------------------------
   # Auto-updates labelled containers on a cron schedule. Opt-in via:
   #   COMPOSE_PROFILES=auto-update
-  # Only services tagged with `com.centurylinklabs.watchtower.enable=true`
-  # are updated (currently: docker-in-docker, cleanup-manager).
-  # The runner agent is intentionally NOT in this list - it uses its own
-  # in-process self-update for the Runner.Listener binary, which is
-  # safer than a Watchtower-driven container restart that could kill an
-  # in-flight job.
+  # All three labelled services are updated:
+  #   - agent              keeps the runner image fresh against GitHub's
+  #                        deprecation cycle (the in-container self-update
+  #                        is wiped on every ephemeral container restart,
+  #                        so only Watchtower actually helps here)
+  #   - docker-in-docker   security patches in dockerd / containerd
+  #   - cleanup-manager    base-image security patches
+  #
+  # WATCHTOWER_TIMEOUT is set to the longest stop_grace_period in the
+  # stack (agent's, default 5m) so a slow-stopping container is not
+  # SIGKILLed prematurely during a Watchtower-triggered restart.
+  # Combined with rolling-restart and the Sunday-03:00 schedule, this
+  # keeps the disruption to in-flight jobs minimal.
   watchtower:
     image: ${WATCHTOWER_IMAGE:-marrrrrrrrry/watchtower:latest}
     container_name: ${STACK_NAME:-github-runner}-watchtower
@@ -216,6 +227,7 @@ services:
       WATCHTOWER_INCLUDE_STOPPED: "false"
       WATCHTOWER_ROLLING_RESTART: "true"
       WATCHTOWER_LABEL_ENABLE: "true"
+      WATCHTOWER_TIMEOUT: ${WATCHTOWER_TIMEOUT:-5m}
       WATCHTOWER_SCHEDULE: ${WATCHTOWER_SCHEDULE:-0 0 3 * * 6}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
