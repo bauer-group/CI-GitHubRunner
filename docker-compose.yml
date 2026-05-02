@@ -23,6 +23,10 @@ services:
     hostname: docker-in-docker
     privileged: true
     restart: unless-stopped
+    labels:
+      # Opt-in for the optional `watchtower` profile. Inert when the profile
+      # is not active. See env var COMPOSE_PROFILES in .env.example.
+      com.centurylinklabs.watchtower.enable: "true"
     environment:
       DOCKER_TLS_CERTDIR: ""
       DOCKER_DRIVER: ${DOCKER_STORAGE_DRIVER:-overlay2}
@@ -103,6 +107,38 @@ services:
       retries: 3
       start_period: 5s
     # No resource limits - Runner agent is lightweight, all work happens in DinD
+    logging:
+      driver: json-file
+      options:
+        max-size: ${LOG_MAX_SIZE:-50m}
+        max-file: "5"
+
+  # ---------------------------------------------------------------------------
+  # Watchtower (optional, profile: watchtower)
+  # ---------------------------------------------------------------------------
+  # Auto-updates labelled containers on a cron schedule. Opt-in via:
+  #   COMPOSE_PROFILES=watchtower
+  # Only services tagged with `com.centurylinklabs.watchtower.enable=true`
+  # are updated (currently: docker-in-docker). The runner agent has its own
+  # in-process self-update mechanism (DISABLE_AUTO_UPDATE=false) and is
+  # intentionally NOT labelled, so active jobs are never restarted.
+  watchtower:
+    image: ${WATCHTOWER_IMAGE:-marrrrrrrrry/watchtower:latest}
+    container_name: ${STACK_NAME:-github-runner}-watchtower
+    restart: unless-stopped
+    profiles:
+      - watchtower
+    environment:
+      TZ: ${TIME_ZONE:-Etc/UTC}
+      WATCHTOWER_CLEANUP: "true"
+      WATCHTOWER_INCLUDE_STOPPED: "false"
+      WATCHTOWER_ROLLING_RESTART: "true"
+      WATCHTOWER_LABEL_ENABLE: "true"
+      WATCHTOWER_SCHEDULE: ${WATCHTOWER_SCHEDULE:-0 0 3 * * 6}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - runner-network
     logging:
       driver: json-file
       options:
