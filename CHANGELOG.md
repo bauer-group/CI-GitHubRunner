@@ -1,3 +1,9 @@
+## [0.7.3](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.7.2...v0.7.3) (2026-05-02)
+
+### 🐛 Bug Fixes
+
+* **cleanup-manager:** retry transient 5xx + summarize HTML errors ([4b48761](https://github.com/bauer-group/CI-GitHubRunner/commit/4b48761702a14a5480ec4fd479dafb37274421f7))
+
 ## [0.7.2](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.7.1...v0.7.2) (2026-05-02)
 
 ### 🐛 Bug Fixes
