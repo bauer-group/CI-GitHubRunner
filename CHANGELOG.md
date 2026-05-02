@@ -1,3 +1,9 @@
+## [0.8.0](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.7.5...v0.8.0) (2026-05-02)
+
+### 🚀 Features
+
+* **agent:** true image auto-update via Watchtower ([c6e07a1](https://github.com/bauer-group/CI-GitHubRunner/commit/c6e07a1c47e1f3c7384627f0504aad33ad8bed6f))
+
 ## [0.7.5](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.7.4...v0.7.5) (2026-05-02)
 
 ### 🐛 Bug Fixes
