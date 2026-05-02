@@ -1,3 +1,9 @@
+## [0.6.0](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.5.0...v0.6.0) (2026-05-02)
+
+### 🚀 Features
+
+* **cleanup-runners:** adaptive pacing from X-RateLimit headers ([bcfd895](https://github.com/bauer-group/CI-GitHubRunner/commit/bcfd8957191c27122353cf48b0ec29c8001fdb09))
+
 ## [0.5.0](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.4.2...v0.5.0) (2026-05-02)
 
 ### 🚀 Features
