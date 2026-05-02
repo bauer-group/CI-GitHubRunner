@@ -24,7 +24,7 @@ services:
     privileged: true
     restart: unless-stopped
     labels:
-      # Opt-in for the optional `watchtower` profile. Inert when the profile
+      # Opt-in for the optional `auto-update` profile. Inert when the profile
       # is not active. See env var COMPOSE_PROFILES in .env.example.
       com.centurylinklabs.watchtower.enable: "true"
     environment:
@@ -114,10 +114,10 @@ services:
         max-file: "5"
 
   # ---------------------------------------------------------------------------
-  # Watchtower (optional, profile: watchtower)
+  # Watchtower (optional, profile: auto-update)
   # ---------------------------------------------------------------------------
   # Auto-updates labelled containers on a cron schedule. Opt-in via:
-  #   COMPOSE_PROFILES=watchtower
+  #   COMPOSE_PROFILES=auto-update
   # Only services tagged with `com.centurylinklabs.watchtower.enable=true`
   # are updated (currently: docker-in-docker). The runner agent has its own
   # in-process self-update mechanism (DISABLE_AUTO_UPDATE=false) and is
@@ -127,7 +127,7 @@ services:
     container_name: ${STACK_NAME:-github-runner}-watchtower
     restart: unless-stopped
     profiles:
-      - watchtower
+      - auto-update
     environment:
       TZ: ${TIME_ZONE:-Etc/UTC}
       WATCHTOWER_CLEANUP: "true"
