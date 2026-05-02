@@ -99,10 +99,7 @@ cmd_start() {
     check_env
 
     echo -e "${BLUE}Starting DinD and $scale runner(s)...${NC}"
-    # --build rebuilds locally-built images (cleanup-manager) when their
-    # Dockerfile or source files have changed. No-op (~1-2s with cache)
-    # for the runner agent and DinD which use external images.
-    $compose_cmd up -d --build --scale agent="$scale"
+    $compose_cmd up -d --scale agent="$scale"
 
     echo ""
     echo -e "${GREEN}Started successfully!${NC}"
@@ -193,8 +190,7 @@ cmd_scale() {
     check_env
 
     echo -e "${BLUE}Scaling runners...${NC}"
-    # --build keeps locally-built images current; see cmd_start for rationale.
-    $compose_cmd up -d --build --scale agent="$scale"
+    $compose_cmd up -d --scale agent="$scale"
 
     echo ""
     echo -e "${GREEN}Done!${NC}"
