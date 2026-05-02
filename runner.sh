@@ -444,7 +444,8 @@ cmd_help() {
     echo "  ./runner.sh scale 8              # Scale to 8 runners"
     echo "  ./runner.sh cleanup --full       # Stack-scoped Docker cleanup"
     echo "  ./runner.sh cleanup-runners -n   # Preview offline-runner cleanup"
-    echo "  ./runner.sh cleanup-runners -y   # Delete all offline runners"
+    echo "  ./runner.sh cleanup-runners -y   # Delete all offline (5% quota reserve)"
+    echo "  ./runner.sh cleanup-runners -y --reserve-pct 0.10  # 10% reserve for gh"
     echo "  ./runner.sh logs agent           # Follow runner logs"
     echo ""
 }

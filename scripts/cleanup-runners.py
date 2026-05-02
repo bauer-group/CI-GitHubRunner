@@ -20,11 +20,23 @@ Usage:
 Options:
     --dry-run, -n         Preview, no deletions
     --batch N             Cap deletions at N this run (default: all)
-    --rate-delay SEC      Seconds between deletes (default: 0.75)
+    --reserve-pct FRAC    Fraction of rate-limit bucket to leave for gh CLI
+                          and other workflows (default: 0.05 = 5%)
+    --floor-delay SEC     Minimum seconds between requests, defends against
+                          the secondary rate limit. Auto-doubles to max 5s
+                          on each 403/429 hit (default: 0.5)
     --min-age-days N      Only delete runners older than N days
     --name-pattern REGEX  Only delete runners whose name matches regex
     --yes, -y             Skip confirmation prompt
     --help, -h            Show help
+
+Pacing strategy (no static rate-delay needed):
+    - Proactive: every response carries X-RateLimit-Limit/-Remaining/-Reset.
+      The script paces requests to stay above `reserve-pct * limit` quota,
+      so concurrent gh CLI usage and workflows never run out of headroom.
+    - Reactive: on a secondary-limit response (403/429 + Retry-After),
+      the script sleeps the exact Retry-After value, then doubles
+      floor-delay so the rest of the run is paced more cautiously.
 
 Auth (from .env, in this priority):
     1. GITHUB_ACCESS_TOKEN (PAT, scope: admin:org or repo)
@@ -171,11 +183,13 @@ def api_request(url: str, token: str, method: str = 'GET', body: bytes = None):
         raise
 
 
-def list_runners(scope: str, token: str):
+def list_runners(scope: str, token: str, rate: 'RateLimit | None' = None):
     page = 1
     while True:
         url = f"{API_BASE}/{scope}/actions/runners?per_page=100&page={page}"
-        data, _ = api_request(url, token, 'GET')
+        data, headers = api_request(url, token, 'GET')
+        if rate is not None:
+            rate.update(headers)
         runners = (data or {}).get('runners') or []
         if not runners:
             return
@@ -186,12 +200,32 @@ def list_runners(scope: str, token: str):
 
 
 def delete_runner(scope: str, runner_id: int, token: str):
+    """Delete one runner.
+
+    Returns: (ok, headers, errmsg, retry_after_sec)
+        retry_after_sec is set only when GitHub returns a secondary
+        rate-limit response (403/429 with abuse/secondary message).
+        Caller should then sleep that long and retry.
+    """
     url = f"{API_BASE}/{scope}/actions/runners/{runner_id}"
     try:
         _, headers = api_request(url, token, 'DELETE')
-        return True, headers, None
+        return True, headers, None, None
     except urllib.error.HTTPError as e:
-        return False, dict(e.headers or {}), f"HTTP {e.code}: {getattr(e, 'body_text', '')[:120]}"
+        headers = dict(e.headers or {})
+        body = getattr(e, 'body_text', '') or ''
+        retry_after = None
+        if e.code in (403, 429):
+            body_lower = body.lower()
+            if ('secondary rate limit' in body_lower
+                    or 'abuse' in body_lower
+                    or 'Retry-After' in headers):
+                try:
+                    retry_after = int(headers.get('Retry-After', '60'))
+                except (TypeError, ValueError):
+                    retry_after = 60
+        errmsg = f"HTTP {e.code}: {body[:120]}"
+        return False, headers, errmsg, retry_after
 
 
 # ============================================================================
@@ -226,6 +260,82 @@ def resolve_pem_path(project_root: Path, raw: str) -> Path:
 
 
 # ============================================================================
+# Rate limit state (proactive primary + reactive secondary)
+# ============================================================================
+
+class RateLimit:
+    """Tracks GitHub rate-limit state and computes the right pacing.
+
+    Two limit dimensions are handled independently:
+
+    1. Primary (proactive). `X-RateLimit-Limit/-Remaining/-Reset` are
+       reported on every response. We pace requests so we never drop
+       below `reserve_pct` of the bucket -- that headroom is left for
+       gh CLI, dashboards, webhooks and other consumers sharing the
+       same App installation token.
+
+    2. Secondary (reactive). The "secondary" or "abuse" rate limit is
+       a burst-protection layer with no proactive header signal. We
+       only learn we hit it when GitHub returns 403/429 with a
+       `Retry-After` header. We then sleep that exact duration and
+       double `floor_delay` so the rest of the run is paced more
+       cautiously. floor_delay never auto-decreases.
+    """
+
+    SECONDARY_FLOOR_CAP = 5.0  # never auto-raise floor above 5s
+
+    def __init__(self, reserve_pct: float = 0.05, floor_delay: float = 0.5):
+        self.limit = 5000
+        self.remaining = 5000
+        self.reset_at = int(time.time()) + 3600
+        self.reserve_pct = max(0.0, min(reserve_pct, 0.5))
+        self.floor_delay = max(0.0, floor_delay)
+        self.secondary_hits = 0
+
+    def update(self, headers: dict):
+        try:
+            self.limit = int(headers.get('X-RateLimit-Limit', self.limit))
+            self.remaining = int(headers.get('X-RateLimit-Remaining', self.remaining))
+            self.reset_at = int(headers.get('X-RateLimit-Reset', self.reset_at))
+        except (TypeError, ValueError):
+            pass
+
+    def reserved(self) -> int:
+        return int(self.limit * self.reserve_pct)
+
+    def usable(self) -> int:
+        return max(0, self.remaining - self.reserved())
+
+    def seconds_to_reset(self) -> int:
+        return max(self.reset_at - int(time.time()), 0)
+
+    def proactive_delay(self, candidates_left: int) -> float:
+        """How long to sleep before the next request, based on the primary
+        bucket. If usable quota is exhausted, returns "wait until reset"."""
+        usable = self.usable()
+        if usable == 0:
+            return float(self.seconds_to_reset() + 2)
+        if usable >= candidates_left:
+            return self.floor_delay
+        # Spread remaining requests evenly across the rest of the window.
+        pacing = self.seconds_to_reset() / max(usable, 1)
+        return max(pacing, self.floor_delay)
+
+    def react_to_secondary(self, retry_after_sec: int):
+        """Called when GitHub returns a 403/429 secondary-limit response."""
+        self.secondary_hits += 1
+        new_floor = min(max(self.floor_delay * 2, 1.0), self.SECONDARY_FLOOR_CAP)
+        self.floor_delay = new_floor
+
+    def quota_summary(self) -> str:
+        usable = self.usable()
+        pct = (self.remaining / self.limit * 100) if self.limit else 0
+        reset_in = fmt_duration(self.seconds_to_reset())
+        return (f"quota: {self.remaining}/{self.limit} ({pct:.0f}%, "
+                f"reset in {reset_in}, reserve {self.reserved()}, usable {usable})")
+
+
+# ============================================================================
 # Main
 # ============================================================================
 
@@ -239,8 +349,15 @@ def main():
                         help="Preview deletions only")
     parser.add_argument('--batch', type=int, default=0, metavar='N',
                         help="Cap deletions at N this run (default: all)")
-    parser.add_argument('--rate-delay', type=float, default=0.75, metavar='SEC',
-                        help="Seconds between API deletes (default: 0.75)")
+    parser.add_argument('--reserve-pct', type=float, default=0.05, metavar='FRAC',
+                        help="Fraction of rate-limit bucket to leave for other "
+                             "consumers (gh CLI, workflows). Default: 0.05 (5%%)")
+    parser.add_argument('--floor-delay', type=float, default=0.5, metavar='SEC',
+                        help="Minimum seconds between requests, defends against "
+                             "the secondary rate limit. Auto-doubles on each 403/429 "
+                             "(capped at 5s). Default: 0.5")
+    parser.add_argument('--rate-delay', type=float, default=None, metavar='SEC',
+                        help=argparse.SUPPRESS)  # deprecated alias for --floor-delay
     parser.add_argument('--min-age-days', type=int, default=0, metavar='N',
                         help="Only delete runners older than N days")
     parser.add_argument('--name-pattern', type=str, default=None, metavar='REGEX',
@@ -248,6 +365,10 @@ def main():
     parser.add_argument('--yes', '-y', action='store_true',
                         help="Skip interactive confirmation")
     args = parser.parse_args()
+
+    # Back-compat: --rate-delay is now --floor-delay; honor whichever is set
+    if args.rate_delay is not None:
+        args.floor_delay = args.rate_delay
 
     project_root = Path(__file__).resolve().parent.parent
     env = load_env(project_root / '.env')
@@ -293,16 +414,21 @@ def main():
         err("No valid auth in .env. Set GITHUB_ACCESS_TOKEN (PAT) or APP_ID+APP_PRIVATE_KEY_FILE.")
         sys.exit(1)
 
+    # ---- Initialize rate-limit state ----
+    rate = RateLimit(reserve_pct=args.reserve_pct, floor_delay=args.floor_delay)
+
     # ---- Discovery ----
     info(f"Target: {target}")
     info(f"Auth:   {auth_label}")
     print()
     info("Listing runners (paginated, 100/page)...")
     try:
-        all_runners = list(list_runners(scope, token))
+        all_runners = list(list_runners(scope, token, rate=rate))
     except urllib.error.HTTPError as e:
-        err(f"Failed to list runners: HTTP {e.code} — {getattr(e, 'body_text', '')[:200]}")
+        err(f"Failed to list runners: HTTP {e.code} - {getattr(e, 'body_text', '')[:200]}")
         sys.exit(1)
+
+    info(f"Initial {rate.quota_summary()}")
 
     online = [r for r in all_runners if r.get('status') == 'online']
     offline = [r for r in all_runners if r.get('status') == 'offline']
@@ -344,9 +470,24 @@ def main():
     if len(candidates) > 5:
         print(f"  ... and {len(candidates) - 5} more")
 
-    eta_sec = len(candidates) * args.rate_delay
+    # ---- Estimate runtime ----
+    # Best case: floor-delay only (quota was plentiful)
+    # Worst case: pace across multiple reset windows when quota is tight
+    n = len(candidates)
+    best_case = n * rate.floor_delay
+    usable_now = rate.usable()
+    if usable_now >= n:
+        eta_str = f"~{fmt_duration(best_case)} (single window, floor-paced)"
+    else:
+        # Will need (n - usable_now) extra requests across future windows
+        windows_needed = max(1, -(-(n - usable_now) // max(rate.limit - rate.reserved(), 1)))
+        worst_case = best_case + windows_needed * 3600
+        eta_str = (f"~{fmt_duration(best_case)}-{fmt_duration(worst_case)} "
+                   f"(quota will require {windows_needed + 1} reset windows)")
     print()
-    info(f"Estimated runtime: ~{fmt_duration(eta_sec)} at {args.rate_delay}s/request")
+    info(f"Estimated runtime: {eta_str}")
+    info(f"Floor delay: {rate.floor_delay}s   Reserve: {rate.reserve_pct * 100:.0f}% "
+         f"({rate.reserved()} requests)")
 
     if args.dry_run:
         warn("DRY RUN - no deletions performed")
@@ -365,7 +506,7 @@ def main():
 
     # ---- Delete loop ----
     print()
-    info(f"Deleting {len(candidates)} runners...")
+    info(f"Deleting {len(candidates)} runners (adaptive pacing)...")
     deleted = 0
     failed = 0
     start = time.time()
@@ -373,7 +514,25 @@ def main():
     for i, r in enumerate(candidates, 1):
         rid = r.get('id')
         rname = r.get('name', '?')
-        ok_, headers, errmsg = delete_runner(scope, rid, token)
+        candidates_left = len(candidates) - i + 1
+
+        ok_, headers, errmsg, retry_after = delete_runner(scope, rid, token)
+        rate.update(headers)
+
+        # Reactive: secondary rate limit hit -> sleep Retry-After + retry once
+        if not ok_ and retry_after is not None:
+            warn(f"  Secondary rate limit hit at request {i}. "
+                 f"Sleeping {retry_after}s (Retry-After)...")
+            rate.react_to_secondary(retry_after)
+            time.sleep(retry_after + 1)
+            ok_, headers, errmsg, retry_after2 = delete_runner(scope, rid, token)
+            rate.update(headers)
+            if retry_after2 is not None:
+                # Second hit in a row - back off harder, count as failed for now
+                rate.react_to_secondary(retry_after2)
+                warn(f"  Secondary limit hit again. floor-delay raised to "
+                     f"{rate.floor_delay}s, skipping this runner for retry next run.")
+
         if ok_:
             deleted += 1
         else:
@@ -383,27 +542,23 @@ def main():
         # Progress every 50, plus first/last
         if i == 1 or i % 50 == 0 or i == len(candidates):
             elapsed = time.time() - start
-            rate = i / elapsed if elapsed > 0 else 0
-            remaining = (len(candidates) - i) / rate if rate > 0 else 0
+            obs_rate = i / elapsed if elapsed > 0 else 0
+            eta_remaining = (len(candidates) - i) / obs_rate if obs_rate > 0 else 0
             print(f"  [{i:>5d}/{len(candidates)}] deleted={deleted} failed={failed} "
-                  f"({rate:.1f} req/s, ETA {fmt_duration(remaining)})")
+                  f"({obs_rate:.1f} req/s, ETA {fmt_duration(eta_remaining)}) | {rate.quota_summary()}")
+            if rate.secondary_hits > 0:
+                print(f"           secondary-hits={rate.secondary_hits}, "
+                      f"floor-delay={rate.floor_delay}s")
 
-        # Rate-limit awareness: pause if quota gets low
-        try:
-            quota_left = int(headers.get('X-RateLimit-Remaining', '5000'))
-        except (TypeError, ValueError):
-            quota_left = 5000
-        if quota_left < 50:
-            try:
-                reset_at = int(headers.get('X-RateLimit-Reset', '0'))
-            except (TypeError, ValueError):
-                reset_at = 0
-            sleep_s = max(reset_at - int(time.time()) + 5, 5)
-            warn(f"  Rate limit low ({quota_left} requests left). Sleeping {sleep_s}s until reset...")
-            time.sleep(sleep_s)
-
+        # Proactive: pace next request based on primary bucket state
         if i < len(candidates):
-            time.sleep(args.rate_delay)
+            delay = rate.proactive_delay(candidates_left - 1)
+            # If we're waiting for reset, surface that to the operator
+            if delay > 60:
+                warn(f"  Quota at reserve floor ({rate.remaining}/{rate.limit}, "
+                     f"reserve {rate.reserved()}). Sleeping {fmt_duration(delay)} "
+                     f"until reset to leave headroom for gh CLI / workflows...")
+            time.sleep(delay)
 
     print()
     elapsed = time.time() - start
