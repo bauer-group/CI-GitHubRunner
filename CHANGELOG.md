@@ -1,3 +1,9 @@
+## [0.7.5](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.7.4...v0.7.5) (2026-05-02)
+
+### 🐛 Bug Fixes
+
+* **agent:** pinned runner image to a specific version ([52fb279](https://github.com/bauer-group/CI-GitHubRunner/commit/52fb279bf4cb46fef0349cc720b5809dd7a53f81))
+
 ## [0.7.4](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.7.3...v0.7.4) (2026-05-02)
 
 ### 🐛 Bug Fixes
