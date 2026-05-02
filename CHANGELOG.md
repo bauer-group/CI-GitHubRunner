@@ -1,3 +1,18 @@
+## [0.7.0](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.6.0...v0.7.0) (2026-05-02)
+
+### 🚀 Features
+
+* **cleanup-manager:** added scheduled cleanup sidecar service ([f30b5fa](https://github.com/bauer-group/CI-GitHubRunner/commit/f30b5fad04163ef4103e46a590b8cffd2914f9f0))
+* **workflows:** added scheduled cleanup-runners workflow ([361924b](https://github.com/bauer-group/CI-GitHubRunner/commit/361924b0f215a43d462a67c79cc9a21b000f50ae))
+
+### 🐛 Bug Fixes
+
+* **compose:** increased stop_grace_period for graceful deregister ([645f007](https://github.com/bauer-group/CI-GitHubRunner/commit/645f0079a4991cd03989bff99d4697b58a80882b))
+
+### ⏪ Reverts
+
+* removed scheduled cleanup-runners workflow ([bbba1e3](https://github.com/bauer-group/CI-GitHubRunner/commit/bbba1e313005f59f571bb6514fc026a10228ce00))
+
 ## [0.6.0](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.5.0...v0.6.0) (2026-05-02)
 
 ### 🚀 Features
