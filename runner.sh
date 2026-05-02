@@ -246,19 +246,27 @@ cmd_cleanup() {
 
     if [ "$full_cleanup" = true ]; then
         echo ""
-        echo -e "${YELLOW}Performing full cleanup...${NC}"
+        echo -e "${YELLOW}Performing full cleanup (scoped to ${project_name})...${NC}"
 
-        echo -e "${BLUE}Removing all project volumes...${NC}"
-        $compose_cmd down -v 2>/dev/null || true
-
-        echo -e "${BLUE}Pruning unused Docker images...${NC}"
-        docker image prune -af 2>/dev/null || true
-
-        echo -e "${BLUE}Pruning build cache...${NC}"
-        docker builder prune -af 2>/dev/null || true
+        # Single stack-scoped wipe: removes this project's named volumes
+        # AND the images its services reference. The runner's full build
+        # cache and image store live inside the dind-data volume (DinD
+        # runs an isolated daemon at tcp://docker-in-docker:2375), so
+        # `-v` reclaims that disk space too.
+        #
+        # Host-level `docker image prune -af` and `docker builder prune -af`
+        # are intentionally NOT used: the runner does not populate the
+        # host's daemon caches — those calls would only delete state from
+        # OTHER stacks on the same host.
+        echo -e "${BLUE}Removing project volumes and images...${NC}"
+        $compose_cmd down -v --rmi all 2>/dev/null || true
 
         echo ""
         echo -e "${GREEN}Full cleanup completed!${NC}"
+        echo -e "${BLUE}Note: only volumes and images belonging to project${NC}"
+        echo -e "${BLUE}      '${project_name}' were removed. Other stacks on${NC}"
+        echo -e "${BLUE}      this Docker host (images, build cache, volumes)${NC}"
+        echo -e "${BLUE}      are untouched.${NC}"
     else
         echo ""
         echo -e "${GREEN}Basic cleanup completed!${NC}"
