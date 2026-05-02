@@ -107,7 +107,11 @@ services:
       LABELS: ${RUNNER_LABELS:-docker}
       RUNNER_GROUP: ${RUNNER_GROUP:-Default}
       EPHEMERAL: "true"
-      DISABLE_AUTO_UPDATE: "false"
+      # Auto-update of the Runner.Listener binary is the default in
+      # myoung34/github-runner. Do NOT set DISABLE_AUTO_UPDATE here:
+      # the entrypoint checks for env-var *presence* (not value), so
+      # `DISABLE_AUTO_UPDATE: "false"` paradoxically DISABLES auto-
+      # update. Leaving the variable unset is what enables it.
       # Docker configuration
       DOCKER_HOST: tcp://docker-in-docker:2375
       DOCKER_TLS_VERIFY: ""

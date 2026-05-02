@@ -330,6 +330,20 @@ cmd_deploy() {
 
     echo -e "${GREEN}Repository updated${NC}"
 
+    # Pull Latest Container Images
+    # CRITICAL: prevents the "stale runner image" trap where
+    # myoung34/github-runner:latest has been cached locally for months
+    # while GitHub deprecated that runner version. The deprecated
+    # runner registers, gets rejected by GitHub, exits, container
+    # restarts via unless-stopped, repeats - leaking thousands of
+    # offline registrations until the image is manually refreshed.
+    echo ""
+    echo -e "${BLUE}Pulling latest container images...${NC}"
+    local compose_cmd=$(get_compose_cmd)
+    $compose_cmd pull --ignore-pull-failures 2>/dev/null || \
+        $compose_cmd pull || true
+    echo -e "${GREEN}Images refreshed${NC}"
+
     # Make Scripts Executable
     echo ""
     echo -e "${BLUE}Setting script permissions...${NC}"
