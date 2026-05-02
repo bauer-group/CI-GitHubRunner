@@ -1,3 +1,9 @@
+## [0.7.4](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.7.3...v0.7.4) (2026-05-02)
+
+### 🐛 Bug Fixes
+
+* **agent:** removed misleading DISABLE_AUTO_UPDATE, pull images on deploy ([c0fcfbe](https://github.com/bauer-group/CI-GitHubRunner/commit/c0fcfbec9e7a9ccc871445b680eb93b8ebf8bed3))
+
 ## [0.7.3](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.7.2...v0.7.3) (2026-05-02)
 
 ### 🐛 Bug Fixes
