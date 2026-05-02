@@ -23,14 +23,23 @@ jobs:
   validate-compose:
     uses: bauer-group/automation-templates/.github/workflows/modules-validate-compose.yml@main
     with:
-      compose-files: '["docker-compose.yml"]'
+      # Both files validated; app-auth.yml is the override active when
+      # GitHub App auth is configured, base + override is the production combo.
+      compose-files: '["docker-compose.yml", "docker-compose.yml:docker-compose.app-auth.yml"]'
       env-template: |
         {
           "STACK_NAME": "github-runner-test",
+          "TIME_ZONE": "Etc/UTC",
           "GITHUB_ACCESS_TOKEN": "ghp_test_token_placeholder",
-          "REPO_URL": "https://github.com/test-org",
+          "ORG_NAME": "test-org",
           "RUNNER_SCOPE": "org",
-          "DIND_IMAGE": "dind"
+          "RUNNER_NAME_PREFIX": "self-hosted",
+          "RUNNER_GROUP": "Default",
+          "RUNNER_LABELS": "docker",
+          "RUNNER_IMAGE_TAG": "latest",
+          "AGENT_STOP_GRACE": "5m",
+          "DIND_IMAGE": "dind",
+          "APP_PRIVATE_KEY_FILE": "./github-app.pem"
         }
 
   validate-scripts:

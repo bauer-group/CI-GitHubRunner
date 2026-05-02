@@ -1,13 +1,16 @@
 # =============================================================================
 # Dependabot Configuration
 # =============================================================================
-# Monitors Docker images and GitHub Actions for updates
-# Combined with docker-maintenance.yml workflow for auto-merge and release
+# Monitors Docker images, Dockerfile bases, Python dependencies and
+# GitHub Actions for updates. Combined with docker-maintenance.yml
+# workflow for auto-merge and release of Docker base-image bumps.
 # =============================================================================
 
 version: 2
 updates:
-  # Docker Compose image updates (root directory)
+  # ---------------------------------------------------------------------------
+  # docker-compose.yml image references (agent, dind, watchtower)
+  # ---------------------------------------------------------------------------
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
@@ -24,7 +27,61 @@ updates:
       include: "scope"
     open-pull-requests-limit: 5
 
-  # GitHub Actions updates
+  # ---------------------------------------------------------------------------
+  # cleanup-manager Dockerfile base image (python:X.Y-alpine)
+  # Dependabot's docker ecosystem is not recursive; needs an explicit
+  # entry per directory containing a Dockerfile.
+  # ---------------------------------------------------------------------------
+  - package-ecosystem: "docker"
+    directory: "/src/cleanup-manager"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "06:30"
+      timezone: "Etc/UTC"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "cleanup-manager"
+      - "dependabot"
+    commit-message:
+      prefix: "fix(cleanup-manager)"
+      include: "scope"
+    open-pull-requests-limit: 3
+
+  # ---------------------------------------------------------------------------
+  # cleanup-manager Python dependencies
+  # PyJWT[crypto] in particular gets meaningful security updates -
+  # the underlying `cryptography` library has a steady stream of CVEs.
+  # ---------------------------------------------------------------------------
+  - package-ecosystem: "pip"
+    directory: "/src/cleanup-manager"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "06:30"
+      timezone: "Etc/UTC"
+    labels:
+      - "dependencies"
+      - "python"
+      - "cleanup-manager"
+      - "dependabot"
+    commit-message:
+      prefix: "fix(cleanup-manager)"
+      include: "scope"
+    open-pull-requests-limit: 5
+    # Group non-security patch/minor bumps to reduce PR noise; security
+    # advisories still arrive as individual PRs immediately.
+    groups:
+      cleanup-manager-deps:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ---------------------------------------------------------------------------
+  # GitHub Actions updates (reusable workflow refs, runner actions)
+  # ---------------------------------------------------------------------------
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
