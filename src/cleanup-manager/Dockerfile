@@ -80,20 +80,24 @@ RUN apk add --no-cache tini \
 # ---------------------------------------------------------------------------
 WORKDIR /app
 
-COPY main.py config.py scheduler.py console.py github_api.py auth.py rate_limit.py ./
+# Copy the application package only. Build-context-level files
+# (Dockerfile, requirements.txt) intentionally stay out of /app.
+COPY app/ /app/
 
 # ---------------------------------------------------------------------------
-# Runs as root (in-container) on purpose.
+# Unprivileged user, but no `USER` directive
 # ---------------------------------------------------------------------------
-# The container needs to read /opt/github-app.pem, which on hosts that
-# follow the standard convention is mode 0600 owned by root:root. A
-# non-root container user (e.g. uid 1000) cannot read that file. Either
-# the file gets relaxed permissions (insecure on the host) or the
-# container runs as root (low risk - this image only makes outbound
-# GitHub API calls, exposes no ports, and processes no untrusted input).
-# We chose the latter, which also matches the agent service's behavior
-# for the same PEM.
+# The container starts as root (the implicit default) so the entrypoint
+# can read /opt/github-app.pem (mode 0600 root:root on the host). main.py
+# preloads that PEM into APP_PRIVATE_KEY then calls os.setgid/os.setuid
+# to drop to this `cleanup` user before any further work. After that
+# point root is gone for the rest of the process lifetime.
 #
+# We define the user here only so the uid/gid 1000 exist; switching is
+# done by the Python entrypoint, not by the Dockerfile.
+RUN addgroup -g 1000 cleanup \
+    && adduser -u 1000 -G cleanup -h /app -D cleanup
+
 # ---------------------------------------------------------------------------
 # Entrypoint (tini for proper signal handling)
 # ---------------------------------------------------------------------------

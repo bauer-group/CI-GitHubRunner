@@ -8,9 +8,19 @@ signing and exchanges the JWT for a short-lived installation token
 The installation token from a GitHub App carries the App's permissions
 - if the App has 'Organization > Self-hosted runners (Read & Write)',
 the token is sufficient for runner-list and runner-delete.
+
+PEM key resolution order (so the unprivileged container user never
+needs filesystem access to the host-mounted 0600 PEM):
+
+    1. APP_PRIVATE_KEY env var (preferred). main.py reads the PEM
+       while still root and exports it here, then drops privileges.
+       After the drop, only this in-memory copy is reachable.
+    2. APP_PRIVATE_KEY_FILE path (fallback). For local dev where the
+       process runs as the file's owner directly.
 """
 
 import json
+import os
 import time
 import urllib.error
 import urllib.request
@@ -22,11 +32,24 @@ from config import Settings
 from console import cleanup_logger
 
 
+def _resolve_pem(private_key_path: Path) -> bytes:
+    """Return PEM bytes from env (preferred) or file (fallback)."""
+    env_pem = os.environ.get("APP_PRIVATE_KEY", "").strip()
+    if env_pem:
+        return env_pem.encode("ascii")
+    if private_key_path.is_file():
+        return private_key_path.read_bytes()
+    raise FileNotFoundError(
+        f"GitHub App private key not available: APP_PRIVATE_KEY env var is "
+        f"empty and the fallback path {private_key_path} is not readable. "
+        "Check that the PEM is mounted into the container and that the "
+        "entrypoint ran as root long enough to preload it."
+    )
+
+
 def make_jwt(app_id: str, private_key_path: Path) -> str:
     """Sign a GitHub App JWT (RS256) using the App's private key."""
-    if not private_key_path.is_file():
-        raise FileNotFoundError(f"GitHub App private key not found: {private_key_path}")
-    pem = private_key_path.read_bytes()
+    pem = _resolve_pem(private_key_path)
     now = int(time.time())
     payload = {
         "iat": now - 60,    # 60s clock skew tolerance
