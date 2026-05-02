@@ -1,3 +1,9 @@
+## [0.8.4](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.8.3...v0.8.4) (2026-05-02)
+
+### ⏪ Reverts
+
+* dropped --build from start/scale, kept it deploy-only ([b451d87](https://github.com/bauer-group/CI-GitHubRunner/commit/b451d87f22a4e11714ca3c0d1ef87d0ae0974ed7))
+
 ## [0.8.3](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.8.2...v0.8.3) (2026-05-02)
 
 ### 🐛 Bug Fixes
