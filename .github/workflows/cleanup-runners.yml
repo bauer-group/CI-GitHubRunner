@@ -1,0 +1,112 @@
+# =============================================================================
+# Cleanup Offline Runners - Scheduled Org Maintenance
+# =============================================================================
+# Removes leaked offline self-hosted runner registrations from the
+# organization on a weekly schedule. Catches whatever slips past the
+# stop_grace_period safety net in docker-compose.yml (host reboots,
+# OOM kills, network glitches during compose down).
+#
+# Required repository configuration:
+#   Variables (Settings -> Secrets and variables -> Actions -> Variables):
+#     RUNNER_APP_ID         GitHub App ID used to manage org runners
+#     RUNNER_ORG_NAME       Org slug (defaults to repository_owner)
+#
+#   Secrets (Settings -> Secrets and variables -> Actions -> Secrets):
+#     RUNNER_APP_PRIVATE_KEY  PEM contents of the GitHub App private key
+#                             (the same key used in APP_PRIVATE_KEY_FILE
+#                              on the runner host)
+#
+# The App must be installed at the org level with permission:
+#   Organization -> Self-hosted runners: Read & Write
+# =============================================================================
+
+name: 🧹 Cleanup Offline Runners
+
+on:
+  schedule:
+    # Sunday 03:00 UTC - low CI traffic window. Adjust if your team
+    # runs Sunday-night batch jobs that might race the cleanup.
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Preview only (no deletions)'
+        type: boolean
+        required: false
+        default: false
+      min_age_days:
+        description: 'Skip runners younger than N days'
+        type: string
+        required: false
+        default: '1'
+      reserve_pct:
+        description: 'Rate-limit reserve fraction (0.10 = leave 10% for other workflows)'
+        type: string
+        required: false
+        default: '0.10'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cleanup-runners
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    name: Delete offline runners
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate GitHub App installation token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.RUNNER_APP_ID }}
+          private-key: ${{ secrets.RUNNER_APP_PRIVATE_KEY }}
+          owner: ${{ vars.RUNNER_ORG_NAME || github.repository_owner }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Materialize .env from workflow inputs
+        env:
+          INSTALL_TOKEN: ${{ steps.app-token.outputs.token }}
+          ORG: ${{ vars.RUNNER_ORG_NAME || github.repository_owner }}
+        run: |
+          # The cleanup script reads .env. We hand it the short-lived
+          # App installation token via GITHUB_ACCESS_TOKEN (the script's
+          # PAT path) since the token already carries org-runner perms.
+          cat > .env <<EOF
+          GITHUB_ACCESS_TOKEN=${INSTALL_TOKEN}
+          ORG_NAME=${ORG}
+          RUNNER_SCOPE=org
+          STACK_NAME=github-runner
+          EOF
+          chmod 600 .env
+
+      - name: Run cleanup (dry-run preview)
+        if: github.event.inputs.dry_run == 'true'
+        run: |
+          python3 scripts/cleanup-runners.py \
+            --dry-run \
+            --min-age-days "${{ github.event.inputs.min_age_days || '1' }}" \
+            --reserve-pct  "${{ github.event.inputs.reserve_pct  || '0.10' }}"
+
+      - name: Run cleanup (actual deletion)
+        if: github.event.inputs.dry_run != 'true'
+        run: |
+          python3 scripts/cleanup-runners.py \
+            --yes \
+            --min-age-days "${{ github.event.inputs.min_age_days || '1' }}" \
+            --reserve-pct  "${{ github.event.inputs.reserve_pct  || '0.10' }}"
+
+      - name: Cleanup .env
+        if: always()
+        run: rm -f .env
