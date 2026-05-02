@@ -47,6 +47,7 @@ LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.source="https://github.com/bauer-group/CI-GitHubRunner"
 LABEL org.opencontainers.image.url="https://github.com/bauer-group/CI-GitHubRunner"
 LABEL org.opencontainers.image.documentation="https://github.com/bauer-group/CI-GitHubRunner#readme"
+LABEL org.opencontainers.image.version="0.0.0"
 
 # ---------------------------------------------------------------------------
 # Environment
