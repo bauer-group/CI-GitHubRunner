@@ -83,13 +83,17 @@ WORKDIR /app
 COPY main.py config.py scheduler.py console.py github_api.py auth.py rate_limit.py ./
 
 # ---------------------------------------------------------------------------
-# Non-root user
+# Runs as root (in-container) on purpose.
 # ---------------------------------------------------------------------------
-RUN addgroup -g 1000 cleanup \
-    && adduser -u 1000 -G cleanup -h /app -D cleanup
-
-USER cleanup
-
+# The container needs to read /opt/github-app.pem, which on hosts that
+# follow the standard convention is mode 0600 owned by root:root. A
+# non-root container user (e.g. uid 1000) cannot read that file. Either
+# the file gets relaxed permissions (insecure on the host) or the
+# container runs as root (low risk - this image only makes outbound
+# GitHub API calls, exposes no ports, and processes no untrusted input).
+# We chose the latter, which also matches the agent service's behavior
+# for the same PEM.
+#
 # ---------------------------------------------------------------------------
 # Entrypoint (tini for proper signal handling)
 # ---------------------------------------------------------------------------
