@@ -1,3 +1,13 @@
+## [0.4.1](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.4.0...v0.4.1) (2026-05-02)
+
+### 🐛 Bug Fixes
+
+* **cleanup:** scoped volume removal strictly to this compose project ([b00a95f](https://github.com/bauer-group/CI-GitHubRunner/commit/b00a95fefaf5301d719da765ab80dc83191cd1cf))
+
+### ♻️ Refactoring
+
+* **compose:** renamed watchtower profile to auto-update ([ddc27d3](https://github.com/bauer-group/CI-GitHubRunner/commit/ddc27d3e8f997782a158f7e26b8d20ba1ce9060e))
+
 ## [0.4.0](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.3.11...v0.4.0) (2026-05-02)
 
 ### 🚀 Features
