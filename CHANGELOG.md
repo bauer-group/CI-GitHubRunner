@@ -1,3 +1,9 @@
+## [0.4.0](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.3.11...v0.4.0) (2026-05-02)
+
+### 🚀 Features
+
+* **compose:** added optional watchtower auto-update profile ([e3a2ada](https://github.com/bauer-group/CI-GitHubRunner/commit/e3a2adae40be24dea91516a7e36b8a13bef79e8c))
+
 ## [0.3.11](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.3.10...v0.3.11) (2026-01-14)
 
 
