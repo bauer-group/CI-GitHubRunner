@@ -23,6 +23,10 @@ services:
     hostname: docker-in-docker
     privileged: true
     restart: unless-stopped
+    # Generous grace period: DinD must let in-flight builds drain (otherwise
+    # the runner agent sees a sudden DOCKER_HOST disconnect mid-job and dies
+    # without deregistering, leaking an offline runner).
+    stop_grace_period: 120s
     labels:
       # Opt-in for the optional `auto-update` profile. Inert when the profile
       # is not active. See env var COMPOSE_PROFILES in .env.example.
@@ -67,6 +71,14 @@ services:
   agent:
     image: myoung34/github-runner:latest
     restart: unless-stopped
+    # Give the entrypoint time to call the GitHub deregister API on SIGTERM
+    # before SIGKILL hits. Default of 10s frequently isn't enough when:
+    #   - a job is running (Runner.Listener waits for it to finish)
+    #   - api.github.com has elevated latency
+    #   - DNS resolution is slow on first contact
+    # Without this, every `compose down` and every `--scale` reduction
+    # leaks one offline-runner registration per stopped container.
+    stop_grace_period: 120s
     environment:
       # Authentication: Use ACCESS_TOKEN (PAT) or APP_ID/APP_LOGIN (GitHub App)
       # For GitHub App: APP_PRIVATE_KEY is set by docker-compose.app-auth.yml override
