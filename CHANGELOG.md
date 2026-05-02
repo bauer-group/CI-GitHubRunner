@@ -1,3 +1,10 @@
+## [0.8.1](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.8.0...v0.8.1) (2026-05-02)
+
+### 🐛 Bug Fixes
+
+* **cleanup-manager:** run container as root to read mode-0600 PEM ([42e81b2](https://github.com/bauer-group/CI-GitHubRunner/commit/42e81b213fcd1c8436d9c0979413ceb457a94ed2))
+* **docker-compose:** update network name to remove suffix ([b910059](https://github.com/bauer-group/CI-GitHubRunner/commit/b9100594469122ee403850026acf17257e153253))
+
 ## [0.8.0](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.7.5...v0.8.0) (2026-05-02)
 
 ### 🚀 Features
