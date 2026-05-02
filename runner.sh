@@ -395,6 +395,23 @@ cmd_logs() {
     fi
 }
 
+cmd_cleanup_runners() {
+    print_header "Cleanup Offline Runners"
+    check_env
+
+    local python_cmd=""
+    if command -v python3 >/dev/null 2>&1; then
+        python_cmd=python3
+    elif command -v python >/dev/null 2>&1; then
+        python_cmd=python
+    else
+        echo -e "${RED}Error: Python 3 is required to run cleanup-runners${NC}" >&2
+        exit 1
+    fi
+
+    "$python_cmd" "$PROJECT_ROOT/scripts/cleanup-runners.py" "$@"
+}
+
 cmd_help() {
     echo -e "${BLUE}"
     echo "============================================================================="
@@ -411,20 +428,24 @@ cmd_help() {
     echo "  logs [service]    Show logs (agent, docker-in-docker)"
     echo ""
     echo -e "${CYAN}Maintenance:${NC}"
-    echo "  cleanup           Basic cleanup (work directories)"
-    echo "  cleanup --full    Full cleanup (volumes, images, cache)"
-    echo "  deploy            Pull updates, set permissions"
-    echo "  deploy --init     Initial deployment with setup"
+    echo "  cleanup                       Basic cleanup (work volumes, scoped)"
+    echo "  cleanup --full                Full cleanup (volumes + images, scoped)"
+    echo "  cleanup-runners [opts]        Mass-delete offline runners from GitHub"
+    echo "  cleanup-runners --dry-run     Preview which runners would be deleted"
+    echo "  deploy                        Pull updates, set permissions"
+    echo "  deploy --init                 Initial deployment with setup"
     echo ""
     echo -e "${CYAN}Setup (separate scripts):${NC}"
     echo "  ./scripts/setup-env.sh         Interactive .env configuration"
     echo "  ./scripts/create-github-app.sh Create GitHub App for auth"
     echo ""
     echo -e "${CYAN}Examples:${NC}"
-    echo "  ./runner.sh start 4        # Start 4 parallel runners"
-    echo "  ./runner.sh scale 8        # Scale to 8 runners"
-    echo "  ./runner.sh cleanup --full # Full Docker cleanup"
-    echo "  ./runner.sh logs agent     # Follow runner logs"
+    echo "  ./runner.sh start 4              # Start 4 parallel runners"
+    echo "  ./runner.sh scale 8              # Scale to 8 runners"
+    echo "  ./runner.sh cleanup --full       # Stack-scoped Docker cleanup"
+    echo "  ./runner.sh cleanup-runners -n   # Preview offline-runner cleanup"
+    echo "  ./runner.sh cleanup-runners -y   # Delete all offline runners"
+    echo "  ./runner.sh logs agent           # Follow runner logs"
     echo ""
 }
 
@@ -452,6 +473,10 @@ case "${1:-help}" in
     cleanup|clean)
         shift
         cmd_cleanup "$@"
+        ;;
+    cleanup-runners|prune-runners)
+        shift
+        cmd_cleanup_runners "$@"
         ;;
     deploy)
         shift
