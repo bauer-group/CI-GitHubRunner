@@ -244,7 +244,7 @@ services:
 # =============================================================================
 networks:
   runner-network:
-    name: ${STACK_NAME:-github-runner}_network
+    name: ${STACK_NAME:-github-runner}
     driver: bridge
 
 # =============================================================================
