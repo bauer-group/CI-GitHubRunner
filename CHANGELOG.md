@@ -1,3 +1,9 @@
+## [0.8.3](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.8.2...v0.8.3) (2026-05-02)
+
+### 🐛 Bug Fixes
+
+* **runner.sh:** force rebuild of locally-built images on start/scale/deploy ([fb19cc1](https://github.com/bauer-group/CI-GitHubRunner/commit/fb19cc123e3fa9d71a92536d5df64b72ff22ec9a))
+
 ## [0.8.2](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.8.1...v0.8.2) (2026-05-02)
 
 ### ♻️ Refactoring
