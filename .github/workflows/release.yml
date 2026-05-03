@@ -25,7 +25,7 @@ jobs:
     with:
       # Both files validated; app-auth.yml is the override active when
       # GitHub App auth is configured, base + override is the production combo.
-      compose-files: '["docker-compose.yml", "docker-compose.yml:docker-compose.app-auth.yml"]'
+      compose-files: '["docker-compose.yml", "docker-compose.app-auth.yml"]'
       env-template: |
         {
           "STACK_NAME": "github-runner-test",
