@@ -69,12 +69,12 @@ services:
   # GitHub Actions Runner
   # ---------------------------------------------------------------------------
   agent:
-    # Default :latest gets refreshed automatically by Watchtower (when
+    # Default :ubuntu-noble gets refreshed automatically by Watchtower (when
     # the auto-update profile is active) and on every `runner.sh deploy`
     # via `compose pull`. Override via RUNNER_IMAGE_TAG in .env if you
     # need to pin to a specific version (e.g. testing a new GHA runner
     # release before rolling it out).
-    image: myoung34/github-runner:${RUNNER_IMAGE_TAG:-latest}
+    image: myoung34/github-runner:${RUNNER_IMAGE_TAG:-ubuntu-noble}
     restart: unless-stopped
     # SIGTERM grace period. Tunable via .env so operators can match it
     # to their typical job duration:
