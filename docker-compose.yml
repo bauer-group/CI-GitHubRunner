@@ -129,7 +129,7 @@ services:
       COMPOSE_DOCKER_CLI_BUILD: "1"
       TZ: ${TIME_ZONE:-Etc/UTC}
     # volumes:
-    #   # Shared tool-cache between the agents
+    #   # Shared tool-cache between the agents (causes issues if parallel builds on different agents try to write to the same cache, so disabled by default).
     #   - tool-cache:/opt/hostedtoolcache
     #   # GitHub App private key mount - see docker-compose.app-auth.yml
     networks:
