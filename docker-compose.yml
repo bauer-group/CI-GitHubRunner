@@ -128,9 +128,10 @@ services:
       DOCKER_BUILDKIT: ${DOCKER_BUILDKIT:-1}
       COMPOSE_DOCKER_CLI_BUILD: "1"
       TZ: ${TIME_ZONE:-Etc/UTC}
-    volumes:
-      - tool-cache:/opt/hostedtoolcache
-      # GitHub App private key mount - see docker-compose.app-auth.yml
+    # volumes:
+    #   # Shared tool-cache between the agents
+    #   - tool-cache:/opt/hostedtoolcache
+    #   # GitHub App private key mount - see docker-compose.app-auth.yml
     networks:
       - runner-network
     depends_on:
