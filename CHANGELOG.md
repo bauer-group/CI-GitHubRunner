@@ -1,3 +1,15 @@
+## [0.8.5](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.8.4...v0.8.5) (2026-05-03)
+
+### 🐛 Bug Fixes
+
+* **cleanup-manager)(deps:** update pydantic requirement ([#4](https://github.com/bauer-group/CI-GitHubRunner/issues/4)) ([32b76c7](https://github.com/bauer-group/CI-GitHubRunner/commit/32b76c74db9c0a40517c665d90549107c6a0fb21))
+* **cleanup-manager)(deps:** update pydantic-settings requirement ([#1](https://github.com/bauer-group/CI-GitHubRunner/issues/1)) ([897c03d](https://github.com/bauer-group/CI-GitHubRunner/commit/897c03db3ea20ea73c1e851a5315812796ae9e0f))
+* **cleanup-manager)(deps:** update pyjwt requirement ([#3](https://github.com/bauer-group/CI-GitHubRunner/issues/3)) ([eb269fa](https://github.com/bauer-group/CI-GitHubRunner/commit/eb269fa4d29550ca2f37e8e3d60e40d1a6ca4815))
+* **docker-compose:** comment out volumes section in agent service ([7a2dfde](https://github.com/bauer-group/CI-GitHubRunner/commit/7a2dfdeb071ad3c28f293054d3b89f71e56d1973))
+* **docker-compose:** update comment for volumes section in agent service to clarify issues with parallel builds ([4259fef](https://github.com/bauer-group/CI-GitHubRunner/commit/4259fefbcae0388fd255c30ed78527d42690a652))
+* **docker:** update default runner image tag to ubuntu-noble ([348f825](https://github.com/bauer-group/CI-GitHubRunner/commit/348f8253d207f5521357545a48b17abdc6bf6ef3))
+* **release:** correct compose-files syntax in release workflow ([7e6f10d](https://github.com/bauer-group/CI-GitHubRunner/commit/7e6f10d810df086cff258af0df1135554be245d3))
+
 ## [0.8.4](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.8.3...v0.8.4) (2026-05-02)
 
 ### ⏪ Reverts
