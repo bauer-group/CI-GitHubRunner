@@ -41,4 +41,8 @@ jobs:
     with:
       merge-method: 'squash'
       auto-approve: true
+      # The repository's CI. It has no pull_request trigger and builds no
+      # image, so it never runs for a Dependabot PR and every PR stays open
+      # for review - nothing tests an update before the merge.
+      required-workflows: '.github/workflows/release.yml'
     secrets: inherit
