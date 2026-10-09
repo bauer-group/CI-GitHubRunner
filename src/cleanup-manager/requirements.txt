@@ -2,8 +2,10 @@
 # Cleanup Manager - Python Dependencies
 # =============================================================================
 
-# Scheduler (matches the version in CS-GitHubBackup)
-APScheduler==4.0.0a6
+# Scheduler: stable 3.x line, as in CS-GitHubBackup. 4.0 is still
+# pre-release, has a different API and its alphas (4.0.0a1-a6) are
+# affected by GHSA-9cfw-f3f9-7mm7.
+APScheduler>=3.11.3,<4
 
 # Configuration via type-safe ENV parsing
 pydantic>=2.13.5
