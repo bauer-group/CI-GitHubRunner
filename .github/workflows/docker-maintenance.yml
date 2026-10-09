@@ -41,4 +41,8 @@ jobs:
     with:
       merge-method: 'squash'
       auto-approve: true
+      # required-workflows is deliberately not set, so nothing is merged
+      # automatically: the repository has no pull_request CI (release.yml
+      # runs only on push and workflow_dispatch), so an update would be
+      # merged untested. Set it once a PR workflow builds and tests changes.
     secrets: inherit
