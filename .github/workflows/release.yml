@@ -7,6 +7,15 @@ on:
       - '.github/**'
       - '*.md'
       - 'docs/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'scripts/**'
+      - 'tools/**'
+      - '*.sh'
+      - 'docker-compose*.yml'
+      - '.github/workflows/release.yml'
   workflow_dispatch:
     inputs:
       force-release:
@@ -49,12 +58,57 @@ jobs:
       scan-directory: '.'
       severity: 'error'
 
+  # Builds the cleanup-manager image and runs its tests inside it, on the
+  # same Python and dependencies that ship. Nothing is pushed.
+  build-test:
+    name: 🧪 Build Image & Run Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # Docker Hub throttles (429) and times out shared runner IPs. Pull
+      # Docker Hub images through Google's public mirror; Docker falls
+      # back to Docker Hub for anything the mirror does not hold.
+      - name: Use mirror.gcr.io for Docker Hub pulls
+        run: |
+          config=/etc/docker/daemon.json
+          { sudo cat "$config" 2>/dev/null || echo '{}'; } \
+            | jq '. + {"registry-mirrors": ["https://mirror.gcr.io"]}' \
+            | sudo tee "$config.new" > /dev/null
+          sudo mv "$config.new" "$config"
+          sudo systemctl restart docker
+          docker info --format 'Registry mirrors: {{.RegistryConfig.Mirrors}}'
+
+      - name: Build cleanup-manager image
+        run: docker build --progress=plain --tag cleanup-manager:ci src/cleanup-manager
+
+      # The tests stay out of the image; mount them and add pytest only
+      # for this throwaway container.
+      - name: Run tests in the image
+        run: |
+          docker run --rm --entrypoint sh \
+            --env PIP_ROOT_USER_ACTION=ignore \
+            --volume "$PWD/src/cleanup-manager/tests:/tests:ro" \
+            cleanup-manager:ci \
+            -c 'pip install --quiet pytest && python -m pytest -p no:cacheprovider -v /tests'
+
+      # Real entrypoint as shipped: drops to the unprivileged user, loads
+      # the settings and imports every module, then exits because the
+      # schedule is disabled.
+      - name: Smoke-test the entrypoint
+        run: docker run --rm --env CLEANUP_SCHEDULE_ENABLED=false cleanup-manager:ci
+
   release:
-    needs: [validate-compose, validate-scripts]
+    needs: [validate-compose, validate-scripts, build-test]
     if: |
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
       needs.validate-compose.outputs.valid == 'true' &&
-      needs.validate-scripts.outputs.passed == 'true'
+      needs.validate-scripts.outputs.passed == 'true' &&
+      needs.build-test.result == 'success'
     uses: bauer-group/automation-templates/.github/workflows/modules-semantic-release.yml@main
     with:
       target-branch: 'main'
