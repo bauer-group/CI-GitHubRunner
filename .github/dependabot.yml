@@ -1,32 +1,21 @@
 # =============================================================================
 # Dependabot Configuration
 # =============================================================================
-# Monitors Docker images, Dockerfile bases, Python dependencies and
-# GitHub Actions for updates. Combined with docker-maintenance.yml
-# workflow for auto-merge and release of Docker base-image bumps.
+# Monitors Dockerfile bases, Python dependencies and GitHub Actions for
+# updates. Combined with docker-maintenance.yml workflow for auto-merge
+# and release of Docker base-image bumps.
+#
+# The compose image references (agent, dind, watchtower) are deliberately
+# not tracked: there is no Dockerfile at the repository root (the old
+# "docker in /" entry failed with dependency_file_not_found on every run),
+# and every image in docker-compose.yml takes its tag from an environment
+# variable (RUNNER_IMAGE_TAG, DIND_IMAGE, WATCHTOWER_IMAGE) with a
+# floating default, which Dependabot cannot bump. Watchtower keeps the
+# running containers current instead.
 # =============================================================================
 
 version: 2
 updates:
-  # ---------------------------------------------------------------------------
-  # docker-compose.yml image references (agent, dind, watchtower)
-  # ---------------------------------------------------------------------------
-  - package-ecosystem: "docker"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "sunday"
-      time: "06:30"
-      timezone: "Etc/UTC"
-    labels:
-      - "dependencies"
-      - "docker"
-      - "dependabot"
-    commit-message:
-      prefix: "fix(docker)"
-      include: "scope"
-    open-pull-requests-limit: 5
-
   # ---------------------------------------------------------------------------
   # cleanup-manager Dockerfile base image (python:X.Y-alpine)
   # Dependabot's docker ecosystem is not recursive; needs an explicit
