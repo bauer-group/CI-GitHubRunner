@@ -1,3 +1,30 @@
+# Changelog
+
+All notable changes to this project are documented here. This file is maintained
+automatically by [semantic-release](https://github.com/semantic-release/semantic-release)
+on every release to `main`.
+
+## [0.8.6](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.8.5...v0.8.6) (2026-11-23)
+
+### 🐛 Bug Fixes
+
+* **ci:** granted scopes the called modules need ([a4411c7](https://github.com/bauer-group/CI-GitHubRunner/commit/a4411c7611608a6e998c8c61b3b194c56bc05546))
+* **cleanup-manager)(deps:** update pydantic requirement ([#10](https://github.com/bauer-group/CI-GitHubRunner/issues/10)) ([ff90a71](https://github.com/bauer-group/CI-GitHubRunner/commit/ff90a71c5c87fdff2733cefcb223b92d7570804f))
+* **cleanup-manager)(deps:** update pydantic requirement ([#6](https://github.com/bauer-group/CI-GitHubRunner/issues/6)) ([21db0e1](https://github.com/bauer-group/CI-GitHubRunner/commit/21db0e18776e944221da3ab7cb012a1b102e1077))
+* **cleanup-manager)(deps:** update pydantic-settings requirement ([aa53b98](https://github.com/bauer-group/CI-GitHubRunner/commit/aa53b98642be483292b4eb3a3a76153c52aed16a))
+* **cleanup-manager)(deps:** update pydantic-settings requirement ([#5](https://github.com/bauer-group/CI-GitHubRunner/issues/5)) ([fd17577](https://github.com/bauer-group/CI-GitHubRunner/commit/fd17577a6b4f4e6ba13c76d57c675a7c0a023101))
+* **cleanup-manager)(deps:** update pydantic-settings requirement ([#8](https://github.com/bauer-group/CI-GitHubRunner/issues/8)) ([7219798](https://github.com/bauer-group/CI-GitHubRunner/commit/7219798ba40d3a59f656c5fd1fb278f79105230c))
+* **cleanup-manager)(deps:** update pyjwt requirement ([#12](https://github.com/bauer-group/CI-GitHubRunner/issues/12)) ([c8b36df](https://github.com/bauer-group/CI-GitHubRunner/commit/c8b36dfc58fd39d4749a975e465006b5b4292842))
+* **cleanup-manager)(deps:** update pyjwt requirement ([#13](https://github.com/bauer-group/CI-GitHubRunner/issues/13)) ([c4dc2a0](https://github.com/bauer-group/CI-GitHubRunner/commit/c4dc2a015c7c796babea46081725ce9342f0c046))
+* **cleanup-manager)(deps:** update pyjwt requirement ([#7](https://github.com/bauer-group/CI-GitHubRunner/issues/7)) ([3dbbca5](https://github.com/bauer-group/CI-GitHubRunner/commit/3dbbca556798277c2316df30f32efc5ffaca4bb8))
+* **cleanup-manager)(deps:** update rich requirement ([#2](https://github.com/bauer-group/CI-GitHubRunner/issues/2)) ([caf9096](https://github.com/bauer-group/CI-GitHubRunner/commit/caf9096df1eb740e727966eda87d87642ceaf365))
+
+### 🔧 Maintenance
+
+* **ci:** removed issue AI summary workflow ([29fd136](https://github.com/bauer-group/CI-GitHubRunner/commit/29fd136b494dd92702e1d1ff06b906cc9b23629d)), references [bauer-group/automation-templates#105](https://github.com/bauer-group/automation-templates/issues/105)
+* **ci:** removed redundant teams notification ([9a14bfd](https://github.com/bauer-group/CI-GitHubRunner/commit/9a14bfde4eacfc6dada6305c18b193515c1804e1))
+* **codeowners:** reassigned ownership to core team [skip ci] ([74d9147](https://github.com/bauer-group/CI-GitHubRunner/commit/74d91478e97966f2f6c2ac0b64d5667c7c4d8e39))
+
 ## [0.8.5](https://github.com/bauer-group/CI-GitHubRunner/compare/v0.8.4...v0.8.5) (2026-05-03)
 
 ### 🐛 Bug Fixes
